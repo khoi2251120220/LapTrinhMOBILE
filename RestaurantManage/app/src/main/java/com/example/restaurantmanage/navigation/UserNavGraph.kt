@@ -18,4 +18,8 @@ fun UserNavGraph(navController: NavHostController) {
 //        composable("profile") { ProfileScreen(navController) }
 
     }
+    NavHost(navController = navController, startDestination = "home") {
+        composable("home") { HomeScreen(navController) }
+        composable("cart") { CartScreen(navController) }
+    }
 }
