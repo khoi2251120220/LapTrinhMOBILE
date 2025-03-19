@@ -5,5 +5,5 @@ data class BookingData(
     val rating: Float,
     val reviewCount: Int,
     val price: String,
-    val imageUrl: String
+    val imageResId: Int
 )

@@ -13,5 +13,6 @@ fun SetupNavGraph(navController: NavHostController) {
 //        composable("login") { LoginScreen(navController) }
         composable("user") { MainScreen(navController) }
         composable("admin") { MainScreen(navController) }
+
     }
 }

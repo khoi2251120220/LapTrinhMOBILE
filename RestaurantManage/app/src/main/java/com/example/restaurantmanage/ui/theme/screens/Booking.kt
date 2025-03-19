@@ -1,5 +1,6 @@
 package com.example.restaurantmanage.ui.theme.screens
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -9,6 +10,9 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -38,55 +42,85 @@ fun BookingScreen(navController: NavController) {
             BottomNavBar(navController = navController, currentRoute = currentRoute)
         }
     ) { paddingValues ->
-        LazyColumn(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(16.dp)
         ) {
-            item {
-                OutlinedTextField(
-                    value = "",
-                    onValueChange = { },
-                    label = { Text("Tìm bàn (phòng ăn)") },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 16.dp)
-                )
-            }
-            items(bookingData ?: emptyList()) { booking ->
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    elevation = CardDefaults.cardElevation(4.dp)
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(150.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(text = "Hình ảnh (thay bằng Coil/Glide)", fontSize = 16.sp)
-                        }
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(text = booking.locationName, fontSize = 18.sp)
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(text = "★ ${booking.rating} (${booking.reviewCount} đánh giá)", fontSize = 14.sp)
-                        }
-                        Text(text = booking.price, fontSize = 16.sp, style = MaterialTheme.typography.headlineSmall)
-                        Button(
-                            onClick = { /* Xử lý chọn */ },
-                            modifier = Modifier.align(Alignment.End)
-                        ) {
-                            Text(text = "Chọn")
+            OutlinedTextField(
+                value = "",
+                onValueChange = { },
+                label = { Text("Tìm bàn (phòng ăn)") },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+            )
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 16.dp)
+            ) {
+                items(bookingData) { booking ->
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 16.dp),
+                        elevation = CardDefaults.cardElevation(4.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(150.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Image(
+                                    painter = painterResource(id = booking.imageResId),
+                                    contentDescription = null,
+                                    modifier = Modifier.fillMaxSize()
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = booking.locationName,
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(vertical = 4.dp)
+                            ) {
+                                Text(
+                                    text = "★ ${booking.rating} (${booking.reviewCount} đánh giá)",
+                                    fontSize = 14.sp,
+                                    color = Color.Gray
+                                )
+                            }
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "${booking.price} /Phòng",
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                                Button(
+                                    onClick = { /* Xử lý chọn */ }
+                                ) {
+                                    Text(text = "Chọn")
+                                }
+                            }
                         }
                     }
                 }
-                Spacer(modifier = Modifier.height(16.dp))
             }
         }
     }
 }
+
 @Preview(showBackground = true)
 @Composable
 fun BookingScreenPreview() {
