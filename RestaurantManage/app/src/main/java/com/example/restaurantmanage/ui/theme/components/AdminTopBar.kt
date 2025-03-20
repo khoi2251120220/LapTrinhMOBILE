@@ -49,7 +49,7 @@ fun AdminAppBar(
                 Icon(
                     painter = painterResource(id = R.drawable.ic_personal),
                     contentDescription = "Avatar",
-                    modifier = Modifier.size(32.dp)
+                    modifier = Modifier.size(24.dp)
                 )
             }
         },

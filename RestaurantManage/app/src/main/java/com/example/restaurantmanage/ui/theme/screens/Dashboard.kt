@@ -1,9 +1,11 @@
 package com.example.restaurantmanage.ui.theme.screens
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -36,7 +38,7 @@ fun DashboardScreen(navController: NavController) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
-    val chartColor = Color(0xFF1E88E5) // Màu xanh dương
+    val chartColor = Color(0xFF1E88E5)
 
     Scaffold(
         topBar = {
@@ -74,7 +76,11 @@ fun DashboardScreen(navController: NavController) {
                             .weight(1f)
                             .padding(end = 8.dp),
                         shape = RoundedCornerShape(12.dp),
-                        elevation = CardDefaults.cardElevation(4.dp)
+                        elevation = CardDefaults.cardElevation(0.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = Color.Transparent
+                        ),
+                        border = BorderStroke(1.dp, Color.LightGray)
                     ) {
                         Column(
                             modifier = Modifier.padding(16.dp),
@@ -104,7 +110,11 @@ fun DashboardScreen(navController: NavController) {
                             .weight(1f)
                             .padding(start = 8.dp),
                         shape = RoundedCornerShape(12.dp),
-                        elevation = CardDefaults.cardElevation(4.dp)
+                        elevation = CardDefaults.cardElevation(0.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = Color.Transparent
+                        ),
+                        border = BorderStroke(1.dp, Color.LightGray)
                     ) {
                         Column(
                             modifier = Modifier.padding(16.dp),
@@ -138,9 +148,13 @@ fun DashboardScreen(navController: NavController) {
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(200.dp),
+                        .height(300.dp),
                     shape = RoundedCornerShape(12.dp),
-                    elevation = CardDefaults.cardElevation(4.dp)
+                    elevation = CardDefaults.cardElevation(0.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = Color.Transparent
+                    ),
+                    border = BorderStroke(1.dp, Color.LightGray)
                 ) {
                     Column(
                         modifier = Modifier
@@ -160,8 +174,39 @@ fun DashboardScreen(navController: NavController) {
 
                         Canvas(modifier = Modifier.fillMaxSize()) {
                             val width = size.width
-                            val height = size.height - 20.dp.toPx() // Để lại không gian cho nhãn
+                            val height = size.height - 20.dp.toPx()
                             val pointSpacing = if (dailyRevenue.size > 1) width / (dailyRevenue.size - 1) else width // Tránh chia cho 0
+
+                            // Vẽ các đường lưới ngang cho biểu đồ
+                            val gridLines = 5
+                            val gridSpacing = height / gridLines
+                            
+                            for (i in 0..gridLines) {
+                                val y = i * gridSpacing
+                                
+                                // Vẽ đường lưới
+                                drawLine(
+                                    color = Color.LightGray.copy(alpha = 0.5f),
+                                    start = Offset(0f, y),
+                                    end = Offset(width, y),
+                                    strokeWidth = 1f
+                                )
+                                
+                                // Vẽ giá trị tiền tương ứng trên trục Y
+                                val value = maxRevenue - (i * (maxRevenue - minRevenue) / gridLines)
+                                drawContext.canvas.nativeCanvas.apply {
+                                    drawText(
+                                        "$${String.format(Locale.US, "%.0fK", value / 1000)}",
+                                        10f,
+                                        y + 10,
+                                        android.graphics.Paint().apply {
+                                            color = android.graphics.Color.GRAY
+                                            textSize = 24f
+                                            textAlign = android.graphics.Paint.Align.LEFT
+                                        }
+                                    )
+                                }
+                            }
 
                             // Vẽ nền mờ của biểu đồ
                             drawRect(
@@ -188,24 +233,36 @@ fun DashboardScreen(navController: NavController) {
                                     radius = 5f,
                                     center = Offset(x, y.toFloat())
                                 )
-
-                                // Vẽ nhãn ngày (chỉ vẽ nếu có dữ liệu)
-                                if (dailyRevenue.isNotEmpty()) {
-                                    drawContext.canvas.nativeCanvas.apply {
-                                        drawText(
-                                            day.toString(),
-                                            x,
-                                            height + 20.dp.toPx(),
-                                            android.graphics.Paint().apply {
-                                                color = android.graphics.Color.BLACK
-                                                textSize = 30f
-                                                textAlign = android.graphics.Paint.Align.CENTER
-                                            }
-                                        )
-                                    }
+                                
+                                // Vẽ số ngày
+                                drawContext.canvas.nativeCanvas.apply {
+                                    drawText(
+                                        day.toString(),
+                                        x,
+                                        height + 20.dp.toPx(),
+                                        android.graphics.Paint().apply {
+                                            color = android.graphics.Color.BLACK
+                                            textSize = 24f
+                                            textAlign = android.graphics.Paint.Align.CENTER
+                                        }
+                                    )
                                 }
                             }
 
+                            // Vẽ vùng phía dưới đường biểu đồ
+                            val fillPath = Path().apply {
+                                addPath(path)
+                                lineTo(width, height)
+                                lineTo(0f, height)
+                                close()
+                            }
+                            
+                            drawPath(
+                                fillPath,
+                                chartColor.copy(alpha = 0.1f)
+                            )
+
+                            // Vẽ đường biểu đồ
                             drawPath(
                                 path,
                                 chartColor,
@@ -222,7 +279,11 @@ fun DashboardScreen(navController: NavController) {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
-                    elevation = CardDefaults.cardElevation(4.dp)
+                    elevation = CardDefaults.cardElevation(0.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = Color.Transparent
+                    ),
+                    border = BorderStroke(1.dp, Color.LightGray)
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(
@@ -231,41 +292,46 @@ fun DashboardScreen(navController: NavController) {
                             fontWeight = FontWeight.Medium
                         )
                         Spacer(modifier = Modifier.height(8.dp))
-                        revenueData.loyalCustomers.forEach { customer ->
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                // Giả lập avatar (hình tròn)
-                                Box(
+                        LazyColumn(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(200.dp)
+                        ) {
+                            items(revenueData.loyalCustomers) { customer ->
+                                Row(
                                     modifier = Modifier
-                                        .size(40.dp)
-                                        .background(Color.Gray, shape = RoundedCornerShape(50)),
-                                    contentAlignment = Alignment.Center
+                                        .fillMaxWidth()
+                                        .padding(vertical = 4.dp),
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Text(text = customer[0].toString(), color = Color.White)
-                                }
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Column {
-                                    Text(
-                                        text = customer,
-                                        fontSize = 14.sp,
-                                        fontWeight = FontWeight.Medium
-                                    )
-                                    Text(
-                                        text = "${customer.lowercase(Locale.ROOT)}@gmail.com", // Sửa toLowerCase()
-                                        fontSize = 12.sp,
-                                        color = TextColor
-                                    )
+                                    Box(
+                                        modifier = Modifier
+                                            .size(40.dp)
+                                            .background(Color.Gray, shape = RoundedCornerShape(50)),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(text = customer[0].toString(), color = Color.White)
+                                    }
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Column {
+                                        Text(
+                                            text = customer,
+                                            fontSize = 14.sp,
+                                            fontWeight = FontWeight.Medium
+                                        )
+                                        Text(
+                                            text = "${customer.lowercase(Locale.ROOT)}@gmail.com",
+                                            fontSize = 12.sp,
+                                            color = TextColor
+                                        )
+                                    }
                                 }
                             }
                         }
                     }
                 }
             }
-            item { Spacer(modifier = Modifier.height(16.dp)) } // Khoảng cách cuối
+            item { Spacer(modifier = Modifier.height(16.dp)) } 
         }
     }
 }

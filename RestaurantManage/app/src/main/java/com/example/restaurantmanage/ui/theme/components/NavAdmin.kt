@@ -2,11 +2,14 @@ package com.example.restaurantmanage.ui.theme.components
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.restaurantmanage.R
 import com.example.restaurantmanage.ui.theme.IconActiveColor
@@ -20,7 +23,20 @@ fun NavAdmin(
     NavigationBar(
         modifier = Modifier
             .fillMaxWidth()
-
+            .drawBehind {
+                // Draw only the top border
+                val strokeWidth = 1f
+                val y = 0f
+                drawLine(
+                    color = Color.LightGray,
+                    start = Offset(0f, y),
+                    end = Offset(size.width, y),
+                    strokeWidth = strokeWidth
+                )
+            },
+        containerColor = Color.Transparent,
+        contentColor = LocalContentColor.current,
+        tonalElevation = 0.dp
     ) {
         NavigationBarItem(
             selected = currentRoute == "dashboard",
@@ -34,7 +50,7 @@ fun NavAdmin(
                 Icon(
                     painter = painterResource(id = R.drawable.ic_home),
                     contentDescription = "Dashboard",
-                    modifier = Modifier.size(30.dp),
+                    modifier = Modifier.size(24.dp),
                     tint = if (currentRoute == "dashboard") IconActiveColor else IconInactiveColor
                 )
             },
@@ -52,7 +68,7 @@ fun NavAdmin(
                 Icon(
                     painter = painterResource(id = R.drawable.ic_booking),
                     contentDescription = "Manage Bookings",
-                    modifier = Modifier.size(30.dp),
+                    modifier = Modifier.size(24.dp),
                     tint = if (currentRoute == "manage_bookings") IconActiveColor else IconInactiveColor
                 )
             },
@@ -70,7 +86,7 @@ fun NavAdmin(
                 Icon(
                     painter = painterResource(id = R.drawable.ic_sale),
                     contentDescription = "Reports",
-                    modifier = Modifier.size(30.dp),
+                    modifier = Modifier.size(24.dp),
                     tint = if (currentRoute == "reports") IconActiveColor else IconInactiveColor
                 )
             },
@@ -88,7 +104,7 @@ fun NavAdmin(
                 Icon(
                     painter = painterResource(id = R.drawable.ic_personal),
                     contentDescription = "Settings",
-                    modifier = Modifier.size(30.dp),
+                    modifier = Modifier.size(24.dp),
                     tint = if (currentRoute == "settings") IconActiveColor else IconInactiveColor
                 )
             },

@@ -18,7 +18,7 @@ data class DashboardData(
         29 to 42000.0,
         30 to 50000.0
     ),
-    val loyalCustomers: List<String> = listOf("Nguyen Van A", "Tran Thi B")
+    val loyalCustomers: List<String> = listOf("Nguyen Van A", "Tran Thi B", "Truong Van Teo", "Truong Van Teo", "Truong Van Teo", "Truong Van Teo")
 )
 
 class DashboardViewModel : ViewModel() {
