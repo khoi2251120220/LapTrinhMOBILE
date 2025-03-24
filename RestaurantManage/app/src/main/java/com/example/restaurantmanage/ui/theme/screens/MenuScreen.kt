@@ -14,6 +14,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.rememberAsyncImagePainter
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
+import com.example.restaurantmanage.ui.theme.components.AppBar
 
 data class FoodItem(
     val imageUrl: String,
@@ -65,31 +68,13 @@ fun DrinkItemView(drinkItem: DrinkItem) {
     }
 }
 
-//thanh tiêu đề
-@Composable
-fun CustomTopAppBar(title: String) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp)
-            .height(56.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        IconButton(onClick = {}) {
-            Text("<", color = Color.Blue, fontSize = 30.sp)
-        }
-        Spacer(modifier = Modifier.width(50.dp))
-        Text(text = title, color = Color.Blue, fontSize = 30.sp)
-    }
-}
-
 //Màn hình
 @Composable
-fun MenuScreen() {
+fun MenuScreen(navController: NavController) {
     val isFoodSelected = remember { mutableStateOf(true) }
 
     Column(modifier = Modifier.padding(16.dp)) {
-        CustomTopAppBar(title = "Thực đơn")
+        AppBar("Thực đơn", navController, true)
 
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -140,7 +125,7 @@ fun MenuScreen() {
     }
 }
 
-//Data nào cos thì ti cách sửa sau :)
+
 val foodItems = listOf(
     //Test, ch biết thêm ảnh sao :)
     FoodItem(
@@ -177,9 +162,8 @@ val drinkItems = listOf(
     )
 )
 
-//preview muốn xem gì thì sửa lại
 @Preview(showBackground = true)
 @Composable
 fun MenuReview() {
-    MenuScreen()
+    MenuScreen(navController = rememberNavController())
 }
