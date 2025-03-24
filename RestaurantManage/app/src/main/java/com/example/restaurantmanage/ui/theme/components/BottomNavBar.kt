@@ -15,7 +15,9 @@ import com.example.restaurantmanage.ui.theme.IconInactiveColor
 @Composable
 fun BottomNavBar(
     navController: NavController,
-    currentRoute: String?
+    currentRoute: String?,
+    modifier: Modifier,
+    onNavigate: (String) -> Unit
 ) {
     NavigationBar(
         modifier = Modifier.fillMaxWidth()

@@ -45,3 +45,7 @@ fun AppBar(
         actions = {}
     )
 }
+
+class TopBar(title: String, onBackClick: () -> Unit, modifier: Modifier) {
+
+}

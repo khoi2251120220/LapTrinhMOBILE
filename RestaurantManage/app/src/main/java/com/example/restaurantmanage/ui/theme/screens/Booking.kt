@@ -39,7 +39,9 @@ fun BookingScreen(navController: NavController) {
             )
         },
         bottomBar = {
-            BottomNavBar(navController = navController, currentRoute = currentRoute)
+            ->
+            val onNavigate
+            BottomNavBar(navController = navController, currentRoute = currentRoute, modifier = Modifier.fillMaxWidth(), onNavigate = onNavigate)
         }
     ) { paddingValues ->
         Column(
