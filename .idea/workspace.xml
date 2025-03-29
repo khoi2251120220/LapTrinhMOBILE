@@ -10,31 +10,11 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="05ba222c-9d7a-4e5c-ba0d-47c3ee41a55d" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/.name" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/AndroidProjectSystem.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/compiler.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/deploymentTargetSelector.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/gradle.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/kotlinc.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/migrations.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/runConfigurations.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/RestaurantManage/app/src/main/java/com/example/restaurantmanage/ui/theme/components/RatingComponent.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/RestaurantManage/app/src/main/java/com/example/restaurantmanage/ui/theme/screens/FoodDetailScreen.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/RestaurantManage/app/src/main/java/com/example/restaurantmanage/ui/theme/screens/LocalContext.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/RestaurantManage/app/src/main/java/com/example/restaurantmanage/ui/theme/screens/LoginScreen.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/RestaurantManage/app/src/main/java/com/example/restaurantmanage/ui/theme/screens/PaymentSuccessScreen.kt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/RestaurantManage/app/src/main/java/com/example/restaurantmanage/ui/theme/screens/RatingScreen.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/deploymentTargetSelector.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/deploymentTargetSelector.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/modules.xml" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/RestaurantManage/app/build.gradle.kts" beforeDir="false" afterPath="$PROJECT_DIR$/RestaurantManage/app/build.gradle.kts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/RestaurantManage/app/src/main/AndroidManifest.xml" beforeDir="false" afterPath="$PROJECT_DIR$/RestaurantManage/app/src/main/AndroidManifest.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/RestaurantManage/app/src/main/java/com/example/restaurantmanage/navigation/NavGraph.kt" beforeDir="false" afterPath="$PROJECT_DIR$/RestaurantManage/app/src/main/java/com/example/restaurantmanage/navigation/NavGraph.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/RestaurantManage/app/src/main/java/com/example/restaurantmanage/ui/theme/components/BottomNavBar.kt" beforeDir="false" afterPath="$PROJECT_DIR$/RestaurantManage/app/src/main/java/com/example/restaurantmanage/ui/theme/components/BottomNavBar.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/RestaurantManage/app/src/main/java/com/example/restaurantmanage/ui/theme/components/TopBar.kt" beforeDir="false" afterPath="$PROJECT_DIR$/RestaurantManage/app/src/main/java/com/example/restaurantmanage/ui/theme/components/TopBar.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/RestaurantManage/app/src/main/java/com/example/restaurantmanage/ui/theme/screens/Booking.kt" beforeDir="false" afterPath="$PROJECT_DIR$/RestaurantManage/app/src/main/java/com/example/restaurantmanage/ui/theme/screens/Booking.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/RestaurantManage/app/src/main/java/com/example/restaurantmanage/ui/theme/screens/MainScreen.kt" beforeDir="false" afterPath="$PROJECT_DIR$/RestaurantManage/app/src/main/java/com/example/restaurantmanage/ui/theme/screens/MainScreen.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/RestaurantManage/settings.gradle.kts" beforeDir="false" afterPath="$PROJECT_DIR$/RestaurantManage/settings.gradle.kts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/RestaurantManage/app/src/main/java/com/example/restaurantmanage/MainActivity.kt" beforeDir="false" afterPath="$PROJECT_DIR$/RestaurantManage/app/src/main/java/com/example/restaurantmanage/MainActivity.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/RestaurantManage/app/src/main/java/com/example/restaurantmanage/ui/theme/screens/user/MainScreenUser.kt" beforeDir="false" afterPath="$PROJECT_DIR$/RestaurantManage/app/src/main/java/com/example/restaurantmanage/ui/theme/screens/user/MainScreenUser.kt" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -44,7 +24,7 @@
   <component name="ClangdSettings">
     <option name="formatViaClangd" value="false" />
   </component>
-  <component name="ExecutionTargetManager" SELECTED_TARGET="device_and_snapshot_combo_box_target[DeviceId(pluginId=LocalEmulator, isTemplate=false, identifier=path=C:\Users\ASUS\.android\avd\Medium_Phone.avd)]" />
+  <component name="ExecutionTargetManager" SELECTED_TARGET="device_and_snapshot_combo_box_target[DeviceId(pluginId=LocalEmulator, isTemplate=false, identifier=path=C:\Users\ASUS\.android\avd\Pixel_4.avd)]" />
   <component name="ExternalProjectsData">
     <projectState path="$PROJECT_DIR$/RestaurantManage">
       <ProjectState />
@@ -66,6 +46,7 @@
     <option name="RECENT_TEMPLATES">
       <list>
         <option value="Kotlin File" />
+        <option value="layoutResourceFile_vertical" />
       </list>
     </option>
   </component>
@@ -217,38 +198,17 @@
     <MESSAGE value="a" />
     <option name="LAST_COMMIT_MESSAGE" value="a" />
   </component>
-  <component name="XDebuggerManager">
-    <breakpoint-manager>
-      <breakpoints>
-        <line-breakpoint enabled="true" type="kotlin-line">
-          <url>file://$PROJECT_DIR$/RestaurantManage/app/src/main/java/com/example/restaurantmanage/ui/theme/screens/Booking.kt</url>
-          <line>123</line>
-          <option name="timeStamp" value="3" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="kotlin-line">
-          <url>file://$PROJECT_DIR$/RestaurantManage/app/src/main/java/com/example/restaurantmanage/ui/theme/screens/Booking.kt</url>
-          <line>42</line>
-          <option name="timeStamp" value="4" />
-        </line-breakpoint>
-      </breakpoints>
-    </breakpoint-manager>
-  </component>
   <component name="play_dynamic_filters_status">
     <option name="appIdToCheckInfo">
       <map>
         <entry key="com.example.restaurantmanage">
           <value>
-            <CheckInfo lastCheckTimestamp="1742536738959" />
-          </value>
-        </entry>
-        <entry key="com.example.restaurantmanage">
-          <value>
-            <CheckInfo lastCheckTimestamp="1742536738959" />
+            <CheckInfo lastCheckTimestamp="1743237628463" />
           </value>
         </entry>
         <entry key="com.example.restaurantmanage.test">
           <value>
-            <CheckInfo lastCheckTimestamp="1742536661023" />
+            <CheckInfo lastCheckTimestamp="1743237628462" />
           </value>
         </entry>
       </map>
