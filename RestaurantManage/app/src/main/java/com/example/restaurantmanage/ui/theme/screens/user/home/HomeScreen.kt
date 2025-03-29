@@ -1,4 +1,4 @@
-package com.example.restaurantmanage.ui.theme.screens
+package com.example.restaurantmanage.ui.theme.screens.user.home
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
@@ -53,20 +53,6 @@ fun HomeScreen(
                 }
             )
         },
-        bottomBar = {
-            NavigationBar {
-                NavigationBarItem(
-                    icon = { Icon(painterResource(id = R.drawable.ic_home), "Home") },
-                    selected = true,
-                    onClick = { }
-                )
-                NavigationBarItem(
-                    icon = { Icon(painterResource(id = R.drawable.ic_sale), "Cart") },
-                    selected = false,
-                    onClick = { navController.navigate("cart") }
-                )
-            }
-        }
     ) { padding ->
         LazyColumn(
             modifier = Modifier

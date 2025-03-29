@@ -54,12 +54,17 @@ fun NavAdmin(
                     tint = if (currentRoute == "dashboard") IconActiveColor else IconInactiveColor
                 )
             },
-
+            label = {
+                Text(
+                    text = "Dashboard",
+                    color = if (currentRoute == "dashboard") IconActiveColor else IconInactiveColor
+                )
+            }
         )
         NavigationBarItem(
-            selected = currentRoute == "manage_bookings",
+            selected = currentRoute == "menu_management",
             onClick = {
-                navController.navigate("manage_bookings") {
+                navController.navigate("menu_management") {
                     popUpTo(navController.graph.startDestinationId)
                     launchSingleTop = true
                 }
@@ -67,17 +72,22 @@ fun NavAdmin(
             icon = {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_booking),
-                    contentDescription = "Manage Bookings",
+                    contentDescription = "Menu Management",
                     modifier = Modifier.size(24.dp),
-                    tint = if (currentRoute == "manage_bookings") IconActiveColor else IconInactiveColor
+                    tint = if (currentRoute == "menu_management") IconActiveColor else IconInactiveColor
                 )
             },
-
+            label = {
+                Text(
+                    text = "Menu",
+                    color = if (currentRoute == "menu_management") IconActiveColor else IconInactiveColor
+                )
+            }
         )
         NavigationBarItem(
-            selected = currentRoute == "reports",
+            selected = currentRoute == "table_management",
             onClick = {
-                navController.navigate("reports") {
+                navController.navigate("table_management") {
                     popUpTo(navController.graph.startDestinationId)
                     launchSingleTop = true
                 }
@@ -85,12 +95,17 @@ fun NavAdmin(
             icon = {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_sale),
-                    contentDescription = "Reports",
+                    contentDescription = "Table Management",
                     modifier = Modifier.size(24.dp),
-                    tint = if (currentRoute == "reports") IconActiveColor else IconInactiveColor
+                    tint = if (currentRoute == "table_management") IconActiveColor else IconInactiveColor
                 )
             },
-
+            label = {
+                Text(
+                    text = "Tables",
+                    color = if (currentRoute == "table_management") IconActiveColor else IconInactiveColor
+                )
+            }
         )
         NavigationBarItem(
             selected = currentRoute == "settings",
@@ -108,7 +123,12 @@ fun NavAdmin(
                     tint = if (currentRoute == "settings") IconActiveColor else IconInactiveColor
                 )
             },
-
+            label = {
+                Text(
+                    text = "Settings",
+                    color = if (currentRoute == "settings") IconActiveColor else IconInactiveColor
+                )
+            }
         )
     }
 }

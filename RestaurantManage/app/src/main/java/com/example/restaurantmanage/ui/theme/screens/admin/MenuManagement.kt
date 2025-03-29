@@ -1,4 +1,4 @@
-package com.example.restaurantmanage.ui.theme.screens
+package com.example.restaurantmanage.ui.theme.screens.admin
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background

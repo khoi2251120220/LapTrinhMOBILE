@@ -2,6 +2,8 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    id ("com.google.gms.google-services")
+
 }
 
 android {
@@ -43,6 +45,11 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
+
+    implementation(platform("com.google.firebase:firebase-bom:33.11.0"))
+    implementation("com.google.firebase:firebase-analytics")
+    implementation ("com.google.firebase:firebase-auth:23.2.0")
+    implementation ("com.google.android.gms:play-services-auth:20.7.0")
 
     // Sử dụng Compose BOM để đồng bộ phiên bản
     implementation(platform("androidx.compose:compose-bom:2024.09.03"))

@@ -1,4 +1,4 @@
-package com.example.restaurantmanage.ui.theme.screens
+package com.example.restaurantmanage.ui.theme.screens.user
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
@@ -145,7 +145,7 @@ val foodItems = listOf(
         title = "Tôm sốt cà chua",
         originalPrice = "80 000 VND",
         discountedPrice = "60 000 VND"
-    ),FoodItem(
+    ), FoodItem(
         imageUrl = "",
         title = "Tôm sốt cà chua",
         originalPrice = "80 000 VND",

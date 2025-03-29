@@ -1,4 +1,4 @@
-package com.example.restaurantmanage.ui.theme.screens
+package com.example.restaurantmanage.ui.theme.screens.user
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -33,14 +33,6 @@ fun FoodDetailScreen(
                 modifier = Modifier.fillMaxWidth()
             )
         },
-        bottomBar = {
-            BottomNavBar(
-                onNavigate = onNavigate, // Sử dụng lambda thay vì NavHostController
-                modifier = Modifier.fillMaxWidth(),
-                navController = TODO(),
-                currentRoute = TODO()
-            )
-        }
     ) { innerPadding ->
         Column(
             modifier = Modifier

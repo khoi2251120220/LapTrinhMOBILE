@@ -1,4 +1,4 @@
-package com.example.restaurantmanage.ui.theme.screens
+package com.example.restaurantmanage.ui.theme.screens.user.booking
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -21,6 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
@@ -37,8 +38,8 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import com.example.restaurantmanage.data.viewmodels.BookingViewModel
 import com.example.restaurantmanage.ui.theme.RestaurantManageTheme
 import com.example.restaurantmanage.ui.theme.components.AppBar
-import com.example.restaurantmanage.ui.theme.components.BottomNavBar
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+
 @Composable
 fun BookingScreen(navController: NavController) {
     val viewModel = BookingViewModel()
@@ -55,11 +56,7 @@ fun BookingScreen(navController: NavController) {
                 showBackButton = true
             )
         },
-        bottomBar = {
-            ->
-            val onNavigate
-            BottomNavBar(navController = navController, currentRoute = currentRoute, modifier = Modifier.fillMaxWidth(), onNavigate = onNavigate)
-        }
+
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -208,6 +205,6 @@ fun BookingScreen(navController: NavController) {
 @Composable
 fun BookingScreenPreview() {
     RestaurantManageTheme {
-        BookingScreen(navController = NavController(androidx.compose.ui.platform.LocalContext.current))
+        BookingScreen(navController = NavController(LocalContext.current))
     }
 }
