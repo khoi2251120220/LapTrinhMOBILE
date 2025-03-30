@@ -9,12 +9,11 @@
     <option name="autoReloadType" value="NONE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="05ba222c-9d7a-4e5c-ba0d-47c3ee41a55d" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/deploymentTargetSelector.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/deploymentTargetSelector.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+    <list default="true" id="05ba222c-9d7a-4e5c-ba0d-47c3ee41a55d" name="Changes" comment="update ProfileScreen">
+      <change afterPath="$PROJECT_DIR$/.idea/modules/app/RestaurantManage.app.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/RestaurantManage/app/src/main/java/com/example/restaurantmanage/MainActivity.kt" beforeDir="false" afterPath="$PROJECT_DIR$/RestaurantManage/app/src/main/java/com/example/restaurantmanage/MainActivity.kt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/RestaurantManage/app/src/main/java/com/example/restaurantmanage/ui/theme/screens/user/MainScreenUser.kt" beforeDir="false" afterPath="$PROJECT_DIR$/RestaurantManage/app/src/main/java/com/example/restaurantmanage/ui/theme/screens/user/MainScreenUser.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/RestaurantManage/app/src/main/java/com/example/restaurantmanage/ui/theme/screens/user/personal/ProfileScreen.kt" beforeDir="false" afterPath="$PROJECT_DIR$/RestaurantManage/app/src/main/java/com/example/restaurantmanage/ui/theme/screens/user/personal/ProfileScreen.kt" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -77,22 +76,22 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;Android App.RestaurantManage.app.executor&quot;: &quot;Run&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.cidr.known.project.marker&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.readMode.enableVisualFormatting&quot;: &quot;true&quot;,
-    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
-    &quot;cf.first.check.clang-format&quot;: &quot;false&quot;,
-    &quot;cidr.known.project.marker&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
-    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;D:/my mobile project/RestaurantManage/settings.gradle.kts&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.language.Kotlin&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Android App.RestaurantManage.app.executor": "Run",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.cidr.known.project.marker": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "RunOnceActivity.readMode.enableVisualFormatting": "true",
+    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
+    "cf.first.check.clang-format": "false",
+    "cidr.known.project.marker": "true",
+    "git-widget-placeholder": "main",
+    "kotlin-language-version-configured": "true",
+    "last_opened_file_path": "D:/my mobile project/RestaurantManage/settings.gradle.kts",
+    "settings.editor.selected.configurable": "preferences.language.Kotlin"
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
     <key name="CreateKotlinClassDialog.RecentsKey">
       <recent name="com.example.restaurantmanage.ui.theme.screens" />
@@ -181,6 +180,15 @@
       <option name="presentableId" value="Default" />
       <updated>1742375961963</updated>
     </task>
+    <task id="LOCAL-00001" summary="update MainScreenUser.kt">
+      <option name="closed" value="true" />
+      <created>1743241786757</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1743241786757</updated>
+    </task>
+    <option name="localTasksCounter" value="2" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -196,7 +204,9 @@
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="a" />
-    <option name="LAST_COMMIT_MESSAGE" value="a" />
+    <MESSAGE value="update MainScreenUser.kt" />
+    <MESSAGE value="update ProfileScreen" />
+    <option name="LAST_COMMIT_MESSAGE" value="update ProfileScreen" />
   </component>
   <component name="play_dynamic_filters_status">
     <option name="appIdToCheckInfo">
