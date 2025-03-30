@@ -6,13 +6,20 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -48,9 +55,25 @@ fun HomeScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 16.dp),
-                        singleLine = true
+                        singleLine = true,
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Default.Search,
+                                contentDescription = "Tìm kiếm"
+                            )
+                        },
+                        shape = RoundedCornerShape(8.dp),
+                        colors = TextFieldDefaults.colors(
+                            focusedContainerColor = Color.White,
+                            unfocusedContainerColor = Color.White,
+                            focusedIndicatorColor = Color.Gray,
+                            unfocusedIndicatorColor = Color.Gray
+                        )
                     )
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.White
+                )
             )
         },
     ) { padding ->
@@ -61,14 +84,16 @@ fun HomeScreen(
                 .padding(horizontal = 16.dp)
         ) {
             item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text("Yêu thích", style = MaterialTheme.typography.titleLarge)
-                    Text("Đã đặt", style = MaterialTheme.typography.titleLarge)
-                    Text("Đặt món", style = MaterialTheme.typography.titleLarge)
-                }
+                Spacer(modifier = Modifier.height(16.dp))
+                Image(
+                    painter = painterResource(id = R.drawable.featured_banner),
+                    contentDescription = "Banner món nổi bật",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(150.dp)
+                        .clip(RoundedCornerShape(8.dp)),
+                    contentScale = ContentScale.Crop
+                )
             }
 
             item {
@@ -81,7 +106,7 @@ fun HomeScreen(
 
             item {
                 LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     items(featuredItems) { item ->
                         FeaturedItemCard(
@@ -103,7 +128,7 @@ fun HomeScreen(
             items(categories.chunked(2)) { row ->
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     row.forEach { item ->
                         MenuItemCard(
@@ -124,26 +149,32 @@ fun FeaturedItemCard(
     item: MenuItem,
     onItemClick: () -> Unit
 ) {
-    Card(
+    Column(
         modifier = Modifier
-            .width(120.dp)
             .clickable(onClick = onItemClick),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Column {
+        Card(
+            modifier = Modifier
+                .size(80.dp),
+            shape = CircleShape,
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        ) {
             Image(
                 painter = painterResource(id = R.drawable.nuoceple),
                 contentDescription = item.name,
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(80.dp),
+                    .fillMaxSize()
+                    .clip(CircleShape),
                 contentScale = ContentScale.Crop
             )
-            Text(
-                text = item.name,
-                modifier = Modifier.padding(8.dp)
-            )
         }
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = item.name,
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.padding(4.dp)
+        )
     }
 }
 
@@ -158,7 +189,8 @@ fun MenuItemCard(
         modifier = modifier
             .padding(4.dp)
             .clickable(onClick = onItemClick),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        shape = RoundedCornerShape(8.dp)
     ) {
         Column(
             modifier = Modifier.padding(8.dp)
@@ -168,22 +200,31 @@ fun MenuItemCard(
                 contentDescription = item.name,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(120.dp),
+                    .height(120.dp)
+                    .clip(RoundedCornerShape(8.dp)),
                 contentScale = ContentScale.Crop
+            )
+            Text(
+                text = "Thương hiệu",
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(top = 8.dp),
+                color = Color.Gray
             )
             Text(
                 text = item.name,
                 style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(top = 8.dp)
+                modifier = Modifier.padding(top = 2.dp)
             )
             Text(
-                text = "${item.price.toInt()}đ",
+                text = "${item.price.toInt()}VNĐ",
                 style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(top = 4.dp)
+                modifier = Modifier.padding(top = 4.dp),
+                color = Color.Black
             )
         }
     }
 }
+
 @Preview(showBackground = true)
 @Composable
 fun PreviewHomeScreen() {

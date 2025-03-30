@@ -1,17 +1,19 @@
-package com.example.restaurantmanage.ui.theme.screens.user
+package com.example.restaurantmanage.ui.theme.screens.user.home
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -32,6 +34,10 @@ fun CartScreen(
 ) {
     val cartItems by cartViewModel.cartItem.collectAsState()
     val total by cartViewModel.total.collectAsState()
+
+    val expanded = remember { mutableStateOf(false) }
+    val selectedPayment = remember { mutableStateOf("Tiền mặt") }
+    val paymentMethods = listOf("Tiền mặt", "Thẻ tín dụng", "Ví điện tử")
 
     Scaffold(
         topBar = {
@@ -54,29 +60,53 @@ fun CartScreen(
                 .padding(padding)
                 .padding(16.dp)
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text("Thanh toán bằng")
-                Text("Tiền mặt")
+            Box {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { expanded.value = true }
+                        .padding(vertical = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text("Thanh toán bằng")
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(selectedPayment.value)
+                        Icon(imageVector = Icons.Default.ArrowDropDown, contentDescription = null)
+                    }
+                }
+                DropdownMenu(
+                    expanded = expanded.value,
+                    onDismissRequest = { expanded.value = false }
+                ) {
+                    paymentMethods.forEach { method ->
+                        DropdownMenuItem(
+                            text = { Text(method) },
+                            onClick = {
+                                selectedPayment.value = method
+                                expanded.value = false
+                            }
+                        )
+                    }
+                }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable {},
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text("Mã giảm giá")
-                Text("Sử dụng mã khuyến mãi")
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("Sử dụng mã khuyến mãi")
+                }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            LazyColumn(
-                modifier = Modifier.weight(1f)
-            ) {
+            LazyColumn(modifier = Modifier.weight(1f)) {
                 items(cartItems) { item ->
                     CartItemRow(item)
                 }
@@ -114,7 +144,11 @@ fun CartScreen(
                     onClick = { /* Handle payment */ },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 16.dp)
+                        .padding(vertical = 16.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color.Black,
+                        contentColor = Color.White
+                    )
                 ) {
                     Text("XÁC NHẬN THANH TOÁN")
                 }
@@ -148,6 +182,7 @@ fun CartItemRow(item: CartItem) {
         Text(String.format(Locale.US, "%,.0fđ", item.menuItem.price * item.quantity))
     }
 }
+
 @Preview(showBackground = true)
 @Composable
 fun PreviewCartScreen() {
