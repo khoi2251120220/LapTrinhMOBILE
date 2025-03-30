@@ -15,6 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
@@ -22,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
@@ -62,11 +64,10 @@ class ProfileViewModel : ViewModel() {
         _isSaved.value = false
     }
 }
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
-    paddingValues: PaddingValues,
+    navcontroller : NavController,
     viewModel: ProfileViewModel = viewModel()
 ) {
     val userProfile by viewModel.userProfile.collectAsState()
@@ -85,7 +86,6 @@ fun ProfileScreen(
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
                 .padding(bottom = 80.dp) // Để chỗ cho nút Lưu
-                .padding(paddingValues)
                 .safeDrawingPadding()
                 .padding(16.dp)
         ) {
@@ -168,7 +168,7 @@ fun ProfileScreen(
                         )
                     }
 
-                    Divider(modifier = Modifier.padding(vertical = 16.dp))
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
 
                     // Phone
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -187,7 +187,7 @@ fun ProfileScreen(
                         )
                     }
 
-                    Divider(modifier = Modifier.padding(vertical = 16.dp))
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
 
                     // Address
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -373,7 +373,7 @@ fun ProfileScreenPreview() {
         }
 
         ProfileScreen(
-            paddingValues = PaddingValues(0.dp),
+            navcontroller = NavController(LocalContext.current),
             viewModel = mockViewModel
         )
     }

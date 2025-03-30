@@ -44,13 +44,10 @@ fun MainScreenUser() {
                 MenuScreen(navController)
             }
             composable("profile") {
-                ProfileScreen(
-                    paddingValues = TODO(),
-                    viewModel = TODO()
-                ) // Truyền paddingValues
+                ProfileScreen(navController)
             }
             composable("login_screen") {
-                LoginScreen(navController = navController)
+                LoginScreen( navController)
             }
             composable("password_screen/{email}") { backStackEntry ->
                 val email = backStackEntry.arguments?.getString("email") ?: ""
