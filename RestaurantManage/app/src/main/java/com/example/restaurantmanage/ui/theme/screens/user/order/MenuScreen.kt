@@ -1,6 +1,7 @@
-package com.example.restaurantmanage.ui.theme.screens.user
+package com.example.restaurantmanage.ui.theme.screens.user.order
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -34,8 +35,15 @@ data class DrinkItem(
 
 //View hiển thị thức ăn
 @Composable
-fun FoodItemView(foodItem: FoodItem) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(8.dp)) {
+fun FoodItemView(foodItem: FoodItem, navController: NavController) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally, 
+        modifier = Modifier
+            .padding(8.dp)
+            .clickable {
+                // xử lý sự kiện click để đến trang detaildetail
+            }
+    ) {
         Image(
             painter = rememberAsyncImagePainter(foodItem.imageUrl),
             contentDescription = null,
@@ -52,8 +60,15 @@ fun FoodItemView(foodItem: FoodItem) {
 
 //View hiển thị đồ uống
 @Composable
-fun DrinkItemView(drinkItem: DrinkItem) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(8.dp)) {
+fun DrinkItemView(drinkItem: DrinkItem, navController: NavController) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally, 
+        modifier = Modifier
+            .padding(8.dp)
+            .clickable {
+                // xử lý sự kiện click để đến trang detaildetail
+            }
+    ) {
         Image(
             painter = rememberAsyncImagePainter(drinkItem.imageUrl),
             contentDescription = null,
@@ -114,8 +129,8 @@ fun MenuScreen(navController: NavController) {
                     horizontalArrangement = Arrangement.SpaceEvenly) {
                     itemPair.forEach { item ->
                         when (item) {
-                            is FoodItem -> FoodItemView(item)
-                            is DrinkItem -> DrinkItemView(item)
+                            is FoodItem -> FoodItemView(item, navController)
+                            is DrinkItem -> DrinkItemView(item, navController)
                         }
                         Spacer(modifier = Modifier.width(8.dp))
                     }

@@ -1,4 +1,4 @@
-package com.example.restaurantmanage.ui.theme.screens.user
+package com.example.restaurantmanage.ui.theme.screens.user.order
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*

@@ -1,4 +1,4 @@
-package com.example.restaurantmanage.ui.theme.screens.user.home
+package com.example.restaurantmanage.ui.theme.screens.user.order
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
@@ -7,7 +7,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -141,7 +140,7 @@ fun CartScreen(
                 }
 
                 Button(
-                    onClick = { /* Handle payment */ },
+                    onClick = {  },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(vertical = 16.dp),

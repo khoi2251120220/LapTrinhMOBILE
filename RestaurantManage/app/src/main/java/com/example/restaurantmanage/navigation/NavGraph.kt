@@ -20,13 +20,13 @@ sealed class Screen(val route: String) {
     object RestaurantInfo : Screen("restaurant_info")
     object Contact : Screen("contact")
 
+
     // User Screens (Requires login)
     object UserProfile : Screen("user/profile")
     object UserOrders : Screen("user/orders")
     object UserBookings : Screen("user/bookings")
     object UserFavorites : Screen("user/favorites")
     object Cart : Screen("user/cart")
-    object Checkout : Screen("user/checkout")
 
     // Admin Screens (Requires admin login)
     object AdminDashboard : Screen("admin/dashboard")

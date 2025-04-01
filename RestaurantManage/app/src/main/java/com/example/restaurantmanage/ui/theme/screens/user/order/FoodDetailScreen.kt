@@ -1,8 +1,10 @@
-package com.example.restaurantmanage.ui.theme.screens.user
+package com.example.restaurantmanage.ui.theme.screens.user.order
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -13,25 +15,46 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
 import com.example.restaurantmanage.ui.theme.RestaurantManageTheme
-import com.example.restaurantmanage.ui.theme.components.TopBar
-import com.example.restaurantmanage.ui.theme.components.BottomNavBar
+import com.example.restaurantmanage.ui.theme.components.AppBar
 
 @Composable
 fun FoodDetailScreen(
-    onBackClick: () -> Unit, // Lambda cho hành động back
-    onNavigate: (String) -> Unit, // Lambda cho hành động điều hướng
     foodName: String, // Tên món ăn
     priceRange: String, // Giá tiền
     description: String, // Mô tả món ăn
+    navController: NavController // Thêm NavController để truyền vào AppBar
 ) {
     Scaffold(
         topBar = {
-            TopBar(
-                title = "Chi tiết món ăn",
-                onBackClick = onBackClick, // Sử dụng lambda
-                modifier = Modifier.fillMaxWidth()
-            )
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(8.dp)
+            ) {
+
+                AppBar(
+                    title = "Chi tiết món ăn",
+                    navController = navController,
+                    showBackButton = true
+                )
+
+
+                IconButton(
+                    onClick = { navController.navigate("cart") },
+                    modifier = Modifier
+                        .align(Alignment.CenterEnd)
+                        .padding(end = 8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.ShoppingCart,
+                        contentDescription = "Giỏ hàng",
+                        tint = Color.Black
+                    )
+                }
+            }
         },
     ) { innerPadding ->
         Column(
@@ -132,11 +155,10 @@ fun FoodDetailScreen(
 fun FoodDetailScreenPreview() {
     RestaurantManageTheme {
         FoodDetailScreen(
-            onBackClick = { /* Không làm gì trong preview */ },
-            onNavigate = { /* Không làm gì trong preview */ },
             foodName = "Tên món ăn",
             priceRange = "20.000 VNĐ - 30.000 VNĐ",
-            description = "Gợi ý lựa chọn món, nguyên liệu, thành phần chính cơ bản, ..."
+            description = "Gợi ý lựa chọn món, nguyên liệu, thành phần chính cơ bản, ...",
+            navController = rememberNavController() // Sử dụng rememberNavController trong preview
         )
     }
 }

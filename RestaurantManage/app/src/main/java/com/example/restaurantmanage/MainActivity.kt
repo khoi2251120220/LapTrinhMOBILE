@@ -18,9 +18,10 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
 
-//             MainScreenUser()
+
+            // MainScreenUser()
 //            MainScreenAdmin()
-//           AssignmentMain()
+          // AssignmentMain()
 
 
         }
