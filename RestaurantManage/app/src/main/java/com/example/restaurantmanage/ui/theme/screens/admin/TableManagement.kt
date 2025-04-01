@@ -26,9 +26,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.example.restaurantmanage.data.viewmodels.TableManagementViewModel
 import com.example.restaurantmanage.ui.theme.components.AdminAppBar
 import com.example.restaurantmanage.ui.theme.components.NavAdmin
 import com.example.restaurantmanage.ui.theme.RestaurantManageTheme
@@ -36,42 +38,11 @@ import com.example.restaurantmanage.ui.theme.PrimaryColor
 import java.text.SimpleDateFormat
 import java.util.*
 
-// Enum để đại diện cho trạng thái bàn
-enum class TableStatus {
-    AVAILABLE, // Trống
-    RESERVED,  // Đã đặt trước
-    OCCUPIED   // Đang phục vụ
-}
-
-// Data classes
-data class Table(
-    val id: Int,
-    val name: String,
-    val capacity: Int,
-    val status: TableStatus,
-    val reservation: Reservation? = null,
-    val currentOrder: Order? = null
-)
-
-data class Reservation(
-    val id: Int,
-    val customerName: String,
-    val phoneNumber: String,
-    val numberOfGuests: Int,
-    val time: Date,
-    val note: String = ""
-)
-
-data class Order(
-    val id: Int,
-    val startTime: Date,
-    val items: List<String>,
-    val totalAmount: Double,
-    val status: String
-)
-
 @Composable
-fun TableManagementScreen(navController: NavController) {
+fun TableManagementScreen(
+    navController: NavController,
+    viewModel: TableManagementViewModel = viewModel()
+) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
@@ -79,130 +50,10 @@ fun TableManagementScreen(navController: NavController) {
     val dateFormatter = SimpleDateFormat("dd/MM/yyyy", Locale("vi"))
     val timeFormatter = SimpleDateFormat("HH:mm", Locale("vi"))
 
-    // Mock data
-    val currentTime = Calendar.getInstance().time
-    val calendar = Calendar.getInstance()
-
-    // Thiết lập thời gian cho đặt bàn
-    calendar.add(Calendar.HOUR, 1)
-    val reservation1Time = calendar.time
-
-    calendar.add(Calendar.HOUR, 1)
-    val reservation2Time = calendar.time
-
-    // Thiết lập thời gian bắt đầu cho order hiện tại
-    calendar.add(Calendar.HOUR, -3)
-    val order1StartTime = calendar.time
-
-    val tables = listOf(
-        Table(
-            id = 1,
-            name = "Bàn 01",
-            capacity = 4,
-            status = TableStatus.AVAILABLE
-        ),
-        Table(
-            id = 2,
-            name = "Bàn 02",
-            capacity = 2,
-            status = TableStatus.OCCUPIED,
-            currentOrder = Order(
-                id = 1,
-                startTime = order1StartTime,
-                items = listOf("Tôm xào chua ngọt", "Cơm trắng", "Canh chua"),
-                totalAmount = 250000.0,
-                status = "Đang phục vụ"
-            )
-        ),
-        Table(
-            id = 3,
-            name = "Bàn 03",
-            capacity = 6,
-            status = TableStatus.RESERVED,
-            reservation = Reservation(
-                id = 1,
-                customerName = "Nguyễn Văn A",
-                phoneNumber = "0912345678",
-                numberOfGuests = 5,
-                time = reservation1Time,
-                note = "Kỷ niệm sinh nhật"
-            )
-        ),
-        Table(
-            id = 4,
-            name = "Bàn 04",
-            capacity = 4,
-            status = TableStatus.AVAILABLE
-        ),
-        Table(
-            id = 5,
-            name = "Bàn 05",
-            capacity = 8,
-            status = TableStatus.RESERVED,
-            reservation = Reservation(
-                id = 2,
-                customerName = "Trần Thị B",
-                phoneNumber = "0987654321",
-                numberOfGuests = 7,
-                time = reservation2Time,
-                note = "Gần cửa sổ"
-            )
-        ),
-        Table(
-            id = 6,
-            name = "Bàn 06",
-            capacity = 2,
-            status = TableStatus.AVAILABLE
-        ),
-        Table(
-            id = 7,
-            name = "Bàn 07",
-            capacity = 4,
-            status = TableStatus.AVAILABLE
-        ),
-        Table(
-            id = 8,
-            name = "Bàn VIP 01",
-            capacity = 10,
-            status = TableStatus.OCCUPIED,
-            currentOrder = Order(
-                id = 2,
-                startTime = order1StartTime,
-                items = listOf("Gà nướng", "Lẩu hải sản", "Rau muống xào", "Cơm trắng"),
-                totalAmount = 850000.0,
-                status = "Đang phục vụ"
-            )
-        ),
-        Table(
-            id = 9,
-            name = "Bàn 09",
-            capacity = 4,
-            status = TableStatus.AVAILABLE
-        ),
-        Table(
-            id = 10,
-            name = "Bàn 10",
-            capacity = 6,
-            status = TableStatus.AVAILABLE
-        ),
-        Table(
-            id = 11,
-            name = "Bàn 11",
-            capacity = 4,
-            status = TableStatus.AVAILABLE
-        ),
-        Table(
-            id = 12,
-            name = "Bàn 12",
-            capacity = 2,
-            status = TableStatus.AVAILABLE
-        )
-    )
-
-    // Lọc danh sách bàn theo trạng thái
-    val availableTables = tables.filter { it.status == TableStatus.AVAILABLE }
-    val reservedTables = tables.filter { it.status == TableStatus.RESERVED }
-    val occupiedTables = tables.filter { it.status == TableStatus.OCCUPIED }
+    val tables by viewModel.tables.collectAsState()
+    val availableTables by viewModel.availableTables.collectAsState()
+    val reservedTables by viewModel.reservedTables.collectAsState()
+    val occupiedTables by viewModel.occupiedTables.collectAsState()
 
     var selectedTab by remember { mutableIntStateOf(0) }
     val tabs = listOf("Tất cả (${tables.size})", "Trống (${availableTables.size})",
@@ -255,12 +106,7 @@ fun TableManagementScreen(navController: NavController) {
             }
 
             // Hiển thị lưới bàn
-            val filteredTables = when (selectedTab) {
-                1 -> availableTables
-                2 -> reservedTables
-                3 -> occupiedTables
-                else -> tables
-            }
+            val filteredTables = viewModel.getFilteredTables(selectedTab)
 
             if (filteredTables.isEmpty()) {
                 Box(
@@ -446,27 +292,27 @@ fun TableManagementScreen(navController: NavController) {
 
 @Composable
 fun TableCard(
-    table: Table,
+    table: com.example.restaurantmanage.data.models.Table,
     dateFormatter: SimpleDateFormat,
     timeFormatter: SimpleDateFormat,
     onClick: () -> Unit
 ) {
     val cardColor = when (table.status) {
-        TableStatus.AVAILABLE -> Color(0xFFE8F5E9)
-        TableStatus.RESERVED -> Color(0xFFFFF8E1)
-        TableStatus.OCCUPIED -> Color(0xFFFFEBEE)
+        com.example.restaurantmanage.data.models.TableStatus.AVAILABLE -> Color(0xFFE8F5E9)
+        com.example.restaurantmanage.data.models.TableStatus.RESERVED -> Color(0xFFFFF8E1)
+        com.example.restaurantmanage.data.models.TableStatus.OCCUPIED -> Color(0xFFFFEBEE)
     }
 
     val statusText = when (table.status) {
-        TableStatus.AVAILABLE -> "Trống"
-        TableStatus.RESERVED -> "Đã đặt"
-        TableStatus.OCCUPIED -> "Đang phục vụ"
+        com.example.restaurantmanage.data.models.TableStatus.AVAILABLE -> "Trống"
+        com.example.restaurantmanage.data.models.TableStatus.RESERVED -> "Đã đặt"
+        com.example.restaurantmanage.data.models.TableStatus.OCCUPIED -> "Đang phục vụ"
     }
 
     val statusColor = when (table.status) {
-        TableStatus.AVAILABLE -> Color(0xFF4CAF50)
-        TableStatus.RESERVED -> Color(0xFFFFA000)
-        TableStatus.OCCUPIED -> Color(0xFFF44336)
+        com.example.restaurantmanage.data.models.TableStatus.AVAILABLE -> Color(0xFF4CAF50)
+        com.example.restaurantmanage.data.models.TableStatus.RESERVED -> Color(0xFFFFA000)
+        com.example.restaurantmanage.data.models.TableStatus.OCCUPIED -> Color(0xFFF44336)
     }
 
     Card(
@@ -518,7 +364,7 @@ fun TableCard(
             Spacer(modifier = Modifier.height(8.dp))
 
             when (table.status) {
-                TableStatus.RESERVED -> {
+                com.example.restaurantmanage.data.models.TableStatus.RESERVED -> {
                     table.reservation?.let { reservation ->
                         HorizontalDivider(color = Color.LightGray.copy(alpha = 0.5f))
                         Spacer(modifier = Modifier.height(8.dp))
@@ -553,7 +399,7 @@ fun TableCard(
                         }
                     }
                 }
-                TableStatus.OCCUPIED -> {
+                com.example.restaurantmanage.data.models.TableStatus.OCCUPIED -> {
                     table.currentOrder?.let { order ->
                         HorizontalDivider(color = Color.LightGray.copy(alpha = 0.5f))
                         Spacer(modifier = Modifier.height(8.dp))

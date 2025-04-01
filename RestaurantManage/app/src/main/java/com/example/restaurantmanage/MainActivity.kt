@@ -19,8 +19,8 @@ class MainActivity : ComponentActivity() {
         setContent {
 
 
-            // MainScreenUser()
-//            MainScreenAdmin()
+             //MainScreenUser()
+           // MainScreenAdmin()
           // AssignmentMain()
 
 

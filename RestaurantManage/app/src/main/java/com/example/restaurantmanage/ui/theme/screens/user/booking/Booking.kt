@@ -12,11 +12,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -33,6 +29,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.example.restaurantmanage.data.viewmodels.BookingViewModel
@@ -42,12 +39,13 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 
 @Composable
 fun BookingScreen(navController: NavController) {
-    val viewModel = BookingViewModel()
+    val viewModel: BookingViewModel = viewModel()
     val bookingData = viewModel.data.collectAsState().value
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
     val keyboardController = LocalSoftwareKeyboardController.current
     val textSearch = remember { mutableStateOf("") }
+
     Scaffold(
         topBar = {
             AppBar(
@@ -55,8 +53,7 @@ fun BookingScreen(navController: NavController) {
                 navController = navController,
                 showBackButton = true
             )
-        },
-
+        }
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -119,10 +116,7 @@ fun BookingScreen(navController: NavController) {
                 ),
                 keyboardActions = KeyboardActions(
                     onSearch = {
-                        // Xử lý hành động khi nhấn nút "Tìm kiếm"
                         keyboardController?.hide()
-                        // Bạn có thể thêm logic tìm kiếm ở đây, ví dụ:
-                        // performSearch(textSearch.value)
                     }
                 ),
                 modifier = Modifier
@@ -131,8 +125,8 @@ fun BookingScreen(navController: NavController) {
                     .clip(RoundedCornerShape(12.dp))
                     .background(Color(0xFFA8A2A2)),
                 colors = TextFieldDefaults.colors(
-                    focusedIndicatorColor = Color.Transparent, // Ẩn đường viền khi focus
-                    unfocusedIndicatorColor = Color.Transparent // Ẩn đường viền khi không focus
+                    focusedIndicatorColor = Color.Transparent,
+                    unfocusedIndicatorColor = Color.Transparent
                 )
             )
             LazyColumn(
