@@ -16,6 +16,7 @@ import com.example.restaurantmanage.ui.theme.screens.assignment.LoginScreen
 import com.example.restaurantmanage.ui.theme.screens.assignment.PasswordScreen
 import com.example.restaurantmanage.ui.theme.screens.user.booking.BookingScreen
 import com.example.restaurantmanage.ui.theme.screens.user.home.HomeScreen
+import com.example.restaurantmanage.ui.theme.screens.user.introduce.IntroduceScreen
 import com.example.restaurantmanage.ui.theme.screens.user.order.MenuScreen
 import com.example.restaurantmanage.ui.theme.screens.user.personal.ProfileScreen
 
@@ -32,9 +33,12 @@ fun MainScreenUser() {
     ) { paddingValues ->
         NavHost(
             navController = navController,
-            startDestination = "home",
+            startDestination = "introduce",
             modifier = Modifier.padding(paddingValues)
         ) {
+            composable("introduce") {
+                IntroduceScreen(navController)
+            }
             composable("home") {
                 HomeScreen(navController)
             }

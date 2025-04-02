@@ -9,7 +9,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -20,9 +22,11 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
 import com.example.restaurantmanage.R
 import com.example.restaurantmanage.data.models.CartItem
 import com.example.restaurantmanage.data.viewmodels.CartViewModel
+import com.example.restaurantmanage.navigation.Screen
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -31,12 +35,13 @@ fun CartScreen(
     navController: NavController,
     cartViewModel: CartViewModel = viewModel()
 ) {
-    val cartItems by cartViewModel.cartItem.collectAsState()
+    val cartItems by cartViewModel.cartItems.collectAsState()
     val total by cartViewModel.total.collectAsState()
-
-    val expanded = remember { mutableStateOf(false) }
-    val selectedPayment = remember { mutableStateOf("Tiền mặt") }
-    val paymentMethods = listOf("Tiền mặt", "Thẻ tín dụng", "Ví điện tử")
+    val totalWithTax by cartViewModel.totalWithTax.collectAsState()
+    val tax by cartViewModel.tax.collectAsState()
+    val selectedPayment by cartViewModel.selectedPayment.collectAsState()
+    val paymentMethods by cartViewModel.paymentMethods.collectAsState()
+    val expanded by cartViewModel.isPaymentDropdownExpanded.collectAsState()
 
     Scaffold(
         topBar = {
@@ -63,26 +68,26 @@ fun CartScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { expanded.value = true }
+                        .clickable { cartViewModel.togglePaymentDropdown() }
                         .padding(vertical = 8.dp),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text("Thanh toán bằng")
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(selectedPayment.value)
+                        Text(selectedPayment)
                         Icon(imageVector = Icons.Default.ArrowDropDown, contentDescription = null)
                     }
                 }
                 DropdownMenu(
-                    expanded = expanded.value,
-                    onDismissRequest = { expanded.value = false }
+                    expanded = expanded,
+                    onDismissRequest = { cartViewModel.dismissPaymentDropdown() }
                 ) {
                     paymentMethods.forEach { method ->
                         DropdownMenuItem(
                             text = { Text(method) },
                             onClick = {
-                                selectedPayment.value = method
-                                expanded.value = false
+                                cartViewModel.setPaymentMethod(method)
+                                cartViewModel.dismissPaymentDropdown()
                             }
                         )
                     }
@@ -94,7 +99,7 @@ fun CartScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable {},
+                    .clickable { /* Logic mã giảm giá nếu cần */ },
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text("Mã giảm giá")
@@ -125,7 +130,7 @@ fun CartScreen(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text("Thuế")
-                    Text(String.format(Locale.US, "%,.0fđ", total * 0.1))
+                    Text(String.format(Locale.US, "%,.0fđ", tax))
                 }
 
                 Row(
@@ -134,13 +139,16 @@ fun CartScreen(
                 ) {
                     Text("Tổng", fontWeight = FontWeight.Bold)
                     Text(
-                        String.format(Locale.US, "%,.0fđ", total * 1.1),
+                        String.format(Locale.US, "%,.0fđ", totalWithTax),
                         fontWeight = FontWeight.Bold
                     )
                 }
 
                 Button(
-                    onClick = {  },
+                    onClick = {
+                        cartViewModel.confirmPayment()
+                        navController.navigate(Screen.PaymentSuccess.route) // Điều hướng đến PaymentSuccessScreen
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(vertical = 16.dp),
@@ -166,7 +174,7 @@ fun CartItemRow(item: CartItem) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Image(
-            painter = painterResource(id = R.drawable.placeholder),
+            painter = painterResource(id = getImageResId(item.menuItem.image)),
             contentDescription = item.menuItem.name,
             modifier = Modifier.size(60.dp)
         )
@@ -182,8 +190,15 @@ fun CartItemRow(item: CartItem) {
     }
 }
 
+@Composable
+fun getImageResId(imageName: String): Int {
+    val context = LocalContext.current
+    val resId = context.resources.getIdentifier(imageName, "drawable", context.packageName)
+    return if (resId != 0) resId else R.drawable.placeholder
+}
+
 @Preview(showBackground = true)
 @Composable
 fun PreviewCartScreen() {
-    CartScreen(navController = NavController(LocalContext.current))
+    CartScreen(navController = rememberNavController())
 }

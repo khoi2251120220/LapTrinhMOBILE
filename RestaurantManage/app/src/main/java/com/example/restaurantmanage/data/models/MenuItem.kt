@@ -8,7 +8,8 @@ data class MenuItem(
     val orderCount: Int = 0,
     val inStock: Boolean = true,
     val image: String = "",
-    val description: String = ""
+    val description: String = "",
+    val imageResId: Int = 0,
 )
 
 data class MenuCategory(

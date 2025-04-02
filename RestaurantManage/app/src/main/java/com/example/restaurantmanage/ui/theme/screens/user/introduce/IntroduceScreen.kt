@@ -1,4 +1,4 @@
-package com.example.restaurantmanage.ui.theme.screens.user.home
+package com.example.restaurantmanage.ui.theme.screens.user.introduce
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -34,7 +34,6 @@ fun IntroduceScreen(navController: NavController) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        // Hình ảnh minh họa (có thể là logo hoặc hình ảnh món ăn)
         Image(
             painter = painterResource(id = R.drawable.restaurant_logo),
             contentDescription = "Hình ảnh giới thiệu",

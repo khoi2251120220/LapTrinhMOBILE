@@ -27,6 +27,7 @@ sealed class Screen(val route: String) {
     object UserBookings : Screen("user/bookings")
     object UserFavorites : Screen("user/favorites")
     object Cart : Screen("user/cart")
+    object PaymentSuccess : Screen("user/payment_success")
 
     // Admin Screens (Requires admin login)
     object AdminDashboard : Screen("admin/dashboard")
