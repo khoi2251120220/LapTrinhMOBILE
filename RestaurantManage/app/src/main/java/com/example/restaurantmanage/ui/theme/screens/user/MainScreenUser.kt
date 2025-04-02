@@ -10,6 +10,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.example.restaurantmanage.data.models.*
 import com.example.restaurantmanage.ui.theme.RestaurantManageTheme
 import com.example.restaurantmanage.ui.theme.components.BottomNavBar
 import com.example.restaurantmanage.ui.theme.screens.assignment.LoginScreen
@@ -46,7 +47,7 @@ fun MainScreenUser() {
                 BookingScreen(navController)
             }
             composable("menu") {
-                MenuScreen(navController)
+                MenuScreen(navController, sampleCategories)
             }
             composable("profile") {
                 ProfileScreen(navController)
