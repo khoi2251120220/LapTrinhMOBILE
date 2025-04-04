@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     id ("com.google.gms.google-services")
 
+    kotlin("kapt")
 }
 
 android {
@@ -68,4 +69,10 @@ dependencies {
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
+
+    //roomdb
+
+    implementation ("androidx.room:room-runtime:2.6.1")
+    kapt ("androidx.room:room-compiler:2.6.1")
+    implementation ("androidx.room:room-ktx:2.6.1")
 }

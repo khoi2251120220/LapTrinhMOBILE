@@ -8,7 +8,6 @@ import androidx.navigation.compose.rememberNavController
 @Composable
 fun MainScreenAdmin() {
     val navController = rememberNavController()
-
     NavHost(
         navController = navController,
         startDestination = "dashboard"

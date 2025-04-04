@@ -36,6 +36,199 @@ import com.example.restaurantmanage.data.viewmodels.BookingViewModel
 import com.example.restaurantmanage.ui.theme.RestaurantManageTheme
 import com.example.restaurantmanage.ui.theme.components.AppBar
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import com.example.restaurantmanage.data.viewmodels.BookingData
+import java.text.SimpleDateFormat
+import java.util.*
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun BookingDialog(
+    onDismiss: () -> Unit,
+    onConfirm: (String, String, Int, Date, String) -> Unit
+) {
+    var customerName by remember { mutableStateOf("") }
+    var phoneNumber by remember { mutableStateOf("") }
+    var numberOfGuests by remember { mutableStateOf("1") }
+    var note by remember { mutableStateOf("") }
+    var selectedDate by remember { mutableStateOf(Date()) }
+    var showDatePicker by remember { mutableStateOf(false) }
+    var showTimePicker by remember { mutableStateOf(false) }
+    
+    val datePickerState = rememberDatePickerState(
+        initialSelectedDateMillis = selectedDate.time
+    )
+    
+    val timePickerState = rememberTimePickerState(
+        initialHour = selectedDate.hours,
+        initialMinute = selectedDate.minutes
+    )
+    
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Đặt bàn") },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp)
+            ) {
+                OutlinedTextField(
+                    value = customerName,
+                    onValueChange = { customerName = it },
+                    label = { Text("Họ và tên") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                OutlinedTextField(
+                    value = phoneNumber,
+                    onValueChange = { phoneNumber = it },
+                    label = { Text("Số điện thoại") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone)
+                )
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                OutlinedTextField(
+                    value = numberOfGuests,
+                    onValueChange = { 
+                        if (it.isEmpty() || it.toIntOrNull() != null) {
+                            numberOfGuests = it 
+                        }
+                    },
+                    label = { Text("Số lượng người") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                )
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                OutlinedTextField(
+                    value = note,
+                    onValueChange = { note = it },
+                    label = { Text("Ghi chú") },
+                    modifier = Modifier.fillMaxWidth(),
+                    minLines = 2,
+                    maxLines = 4
+                )
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    OutlinedButton(
+                        onClick = { showDatePicker = true }
+                    ) {
+                        Text("Chọn ngày")
+                    }
+                    
+                    OutlinedButton(
+                        onClick = { showTimePicker = true }
+                    ) {
+                        Text("Chọn giờ")
+                    }
+                }
+                
+                Text(
+                    text = "Thời gian đã chọn: ${SimpleDateFormat("dd/MM/yyyy HH:mm", Locale("vi")).format(selectedDate)}",
+                    modifier = Modifier.padding(top = 8.dp),
+                    fontSize = 14.sp
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    if (customerName.isNotEmpty() && phoneNumber.isNotEmpty() && numberOfGuests.isNotEmpty()) {
+                        onConfirm(customerName, phoneNumber, numberOfGuests.toInt(), selectedDate, note)
+                    }
+                },
+                enabled = customerName.isNotEmpty() && phoneNumber.isNotEmpty() && numberOfGuests.isNotEmpty()
+            ) {
+                Text("Xác nhận")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Hủy")
+            }
+        }
+    )
+    
+    if (showDatePicker) {
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        datePickerState.selectedDateMillis?.let { millis ->
+                            val newDate = Date(millis)
+                            selectedDate = Date(
+                                newDate.year,
+                                newDate.month,
+                                newDate.date,
+                                selectedDate.hours,
+                                selectedDate.minutes
+                            )
+                        }
+                        showDatePicker = false
+                    }
+                ) {
+                    Text("OK")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) {
+                    Text("Hủy")
+                }
+            }
+        ) {
+            DatePicker(
+                state = datePickerState,
+                showModeToggle = false
+            )
+        }
+    }
+    
+    if (showTimePicker) {
+        AlertDialog(
+            onDismissRequest = { showTimePicker = false },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        selectedDate = Date(
+                            selectedDate.year,
+                            selectedDate.month,
+                            selectedDate.date,
+                            timePickerState.hour,
+                            timePickerState.minute
+                        )
+                        showTimePicker = false
+                    }
+                ) {
+                    Text("OK")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showTimePicker = false }) {
+                    Text("Hủy")
+                }
+            },
+            text = {
+                TimePicker(
+                    state = timePickerState
+                )
+            }
+        )
+    }
+}
 
 @Composable
 fun BookingScreen(navController: NavController) {
@@ -45,6 +238,9 @@ fun BookingScreen(navController: NavController) {
     val currentRoute = navBackStackEntry?.destination?.route
     val keyboardController = LocalSoftwareKeyboardController.current
     val textSearch = remember { mutableStateOf("") }
+    
+    var showBookingDialog by remember { mutableStateOf(false) }
+    var selectedBooking by remember { mutableStateOf<BookingData?>(null) }
 
     Scaffold(
         topBar = {
@@ -182,7 +378,10 @@ fun BookingScreen(navController: NavController) {
                                     color = MaterialTheme.colorScheme.primary
                                 )
                                 Button(
-                                    onClick = { /* Xử lý chọn */ }
+                                    onClick = { 
+                                        selectedBooking = booking
+                                        showBookingDialog = true
+                                    }
                                 ) {
                                     Text(text = "Chọn")
                                 }
@@ -192,6 +391,27 @@ fun BookingScreen(navController: NavController) {
                 }
             }
         }
+    }
+    
+    if (showBookingDialog && selectedBooking != null) {
+        BookingDialog(
+            onDismiss = { 
+                showBookingDialog = false
+                selectedBooking = null
+            },
+            onConfirm = { name, phone, guests, date, note ->
+                viewModel.createBooking(
+                    tableName = selectedBooking!!.locationName,
+                    customerName = name,
+                    phoneNumber = phone,
+                    numberOfGuests = guests,
+                    time = date,
+                    note = note
+                )
+                showBookingDialog = false
+                selectedBooking = null
+            }
+        )
     }
 }
 

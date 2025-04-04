@@ -87,4 +87,64 @@ class MenuViewModel : ViewModel() {
             _topSellingItems.value = updatedTopItems
         }
     }
+
+    fun addMenuItem(name: String, price: Double, category: String) {
+        viewModelScope.launch {
+            // Generate a new ID (in a real app, this would come from a backend)
+            val newId = java.util.UUID.randomUUID().toString()
+            
+            // Find the category to add this item to
+            val targetCategoryId = _categories.value.find { it.name == category }?.id 
+                ?: _categories.value.firstOrNull()?.id
+                ?: return@launch
+            
+            // Create new item
+            val newItem = MenuItem(
+                id = newId,
+                name = name,
+                price = price,
+                category = category,
+                orderCount = 0
+            )
+            
+            // Update categories with the new item
+            val updatedCategories = _categories.value.map { existingCategory ->
+                if (existingCategory.id == targetCategoryId) {
+                    existingCategory.copy(items = existingCategory.items + newItem)
+                } else {
+                    existingCategory
+                }
+            }
+            
+            _categories.value = updatedCategories
+        }
+    }
+    
+    fun updateMenuItem(id: String, name: String, price: Double) {
+        viewModelScope.launch {
+            // Update the item in all categories
+            val updatedCategories = _categories.value.map { category ->
+                category.copy(
+                    items = category.items.map { item ->
+                        if (item.id == id) {
+                            item.copy(name = name, price = price)
+                        } else {
+                            item
+                        }
+                    }
+                )
+            }
+            _categories.value = updatedCategories
+            
+            // Update in top selling items if present
+            val updatedTopItems = _topSellingItems.value.map { item ->
+                if (item.id == id) {
+                    item.copy(name = name, price = price)
+                } else {
+                    item
+                }
+            }
+            _topSellingItems.value = updatedTopItems
+        }
+    }
 } 

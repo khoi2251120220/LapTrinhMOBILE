@@ -44,6 +44,35 @@ fun MenuManagementScreen(
     val categories by viewModel.categories.collectAsState()
     val topSellingItems by viewModel.topSellingItems.collectAsState()
     
+    var showAddDialog by remember { mutableStateOf(false) }
+    var showEditDialog by remember { mutableStateOf(false) }
+    var selectedItem by remember { mutableStateOf<MenuItem?>(null) }
+    
+    if (showAddDialog) {
+        MenuItemDialog(
+            isEdit = false,
+            item = null,
+            onDismiss = { showAddDialog = false },
+            onSave = { name, price, category ->
+                viewModel.addMenuItem(name, price, category)
+                showAddDialog = false
+            }
+        )
+    }
+    
+    if (showEditDialog && selectedItem != null) {
+        MenuItemDialog(
+            isEdit = true,
+            item = selectedItem,
+            onDismiss = { showEditDialog = false },
+            onSave = { name, price, category ->
+                viewModel.updateMenuItem(selectedItem!!.id, name, price)
+                showEditDialog = false
+                selectedItem = null
+            }
+        )
+    }
+    
     Scaffold(
         topBar = {
             AdminAppBar(
@@ -59,7 +88,7 @@ fun MenuManagementScreen(
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { /* Thêm món mới */ },
+                onClick = { showAddDialog = true },
                 containerColor = PrimaryColor
             ) {
                 Icon(
@@ -95,7 +124,7 @@ fun MenuManagementScreen(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(
-                        text = category.name,
+                        text = category.name,   
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -120,6 +149,10 @@ fun MenuManagementScreen(
                             item = item,
                             onStockChange = { inStock -> 
                                 viewModel.updateItemStock(item.id, inStock)
+                            },
+                            onEditClick = {
+                                selectedItem = item
+                                showEditDialog = true
                             }
                         )
                     }
@@ -200,7 +233,8 @@ fun TopSellingItemsCard(topSellingItems: List<MenuItem>) {
 @Composable
 fun MenuItemCard(
     item: MenuItem,
-    onStockChange: (Boolean) -> Unit
+    onStockChange: (Boolean) -> Unit,
+    onEditClick: () -> Unit
 ) {
     var isOutOfStock by remember { mutableStateOf(!item.inStock) }
     
@@ -275,7 +309,7 @@ fun MenuItemCard(
                     )
                     
                     IconButton(
-                        onClick = { /* Sửa món */ },
+                        onClick = onEditClick,
                         modifier = Modifier.size(30.dp)
                     ) {
                         Icon(
@@ -288,6 +322,98 @@ fun MenuItemCard(
             }
         }
     }
+}
+
+@Composable
+fun MenuItemDialog(
+    isEdit: Boolean,
+    item: MenuItem?,
+    onDismiss: () -> Unit,
+    onSave: (name: String, price: Double, category: String) -> Unit
+) {
+    var itemName by remember { mutableStateOf(item?.name ?: "") }
+    var itemPrice by remember { mutableStateOf(item?.price?.toString() ?: "") }
+    var itemCategory by remember { mutableStateOf(item?.category ?: "") }
+    var hasError by remember { mutableStateOf(false) }
+    
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(text = if (isEdit) "Chỉnh sửa món" else "Thêm món mới") },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp)
+            ) {
+                OutlinedTextField(
+                    value = itemName,
+                    onValueChange = { itemName = it },
+                    label = { Text("Tên món") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    isError = hasError && itemName.isEmpty()
+                )
+                
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                OutlinedTextField(
+                    value = itemPrice,
+                    onValueChange = { itemPrice = it },
+                    label = { Text("Giá (VND)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    isError = hasError && (itemPrice.isEmpty() || itemPrice.toDoubleOrNull() == null)
+                )
+                
+                if (!isEdit) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    
+                    OutlinedTextField(
+                        value = itemCategory,
+                        onValueChange = { itemCategory = it },
+                        label = { Text("Danh mục") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        isError = hasError && itemCategory.isEmpty()
+                    )
+                }
+                
+                if (hasError) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Vui lòng điền đầy đủ thông tin",
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    if (itemName.isNotEmpty() && itemPrice.isNotEmpty() && 
+                        (isEdit || itemCategory.isNotEmpty()) && 
+                        itemPrice.toDoubleOrNull() != null
+                    ) {
+                        onSave(
+                            itemName,
+                            itemPrice.toDoubleOrNull() ?: 0.0,
+                            if (isEdit) item?.category ?: "" else itemCategory
+                        )
+                    } else {
+                        hasError = true
+                    }
+                }
+            ) {
+                Text("Lưu")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Hủy")
+            }
+        }
+    )
 }
 
 @Preview(showBackground = true)
