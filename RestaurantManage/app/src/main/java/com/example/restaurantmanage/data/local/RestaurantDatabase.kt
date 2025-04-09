@@ -17,7 +17,8 @@ import com.example.restaurantmanage.data.local.entity.*
         TableEntity::class,
         ReservationEntity::class,
         OrderEntity::class,
-        OrderItemEntity::class
+        OrderItemEntity::class,
+        CartItemEntity::class
     ],
     version = 1,
     exportSchema = false
@@ -30,6 +31,7 @@ abstract class RestaurantDatabase : RoomDatabase() {
     abstract fun reservationDao(): ReservationDao
     abstract fun orderDao(): OrderDao
     abstract fun orderItemDao(): OrderItemDao
+    abstract fun cartItemDao(): CartItemDao
 
     companion object {
         @Volatile

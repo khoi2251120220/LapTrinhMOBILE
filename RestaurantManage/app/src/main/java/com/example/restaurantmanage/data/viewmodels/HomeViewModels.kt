@@ -2,53 +2,132 @@ package com.example.restaurantmanage.data.viewmodels
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.restaurantmanage.R
+import com.example.restaurantmanage.data.local.dao.CategoryDao
+import com.example.restaurantmanage.data.local.dao.MenuItemDao
+import com.example.restaurantmanage.data.local.entity.MenuItemEntity
+import com.example.restaurantmanage.data.models.MenuCategory
 import com.example.restaurantmanage.data.models.MenuItem
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 
-class HomeViewModel : ViewModel() {
+open class HomeViewModel(
+    private val menuItemDao: MenuItemDao,
+    private val categoryDao: CategoryDao
+) : ViewModel() {
     private val _featuredItems = MutableStateFlow<List<MenuItem>>(emptyList())
-    val featuredItems: StateFlow<List<MenuItem>> = _featuredItems.asStateFlow()
+    open val featuredItems: StateFlow<List<MenuItem>> = _featuredItems.asStateFlow()
 
     private val _categories = MutableStateFlow<List<MenuCategory>>(emptyList())
-    val categories: StateFlow<List<MenuCategory>> = _categories.asStateFlow()
+    open val categories: StateFlow<List<MenuCategory>> = _categories.asStateFlow()
 
     init {
         loadData()
     }
 
+    private fun MenuItemEntity.toMenuItem(): MenuItem {
+        return MenuItem(
+            id = id,
+            name = name,
+            price = price,
+            categoryId = categoryId,
+            orderCount = orderCount,
+            inStock = inStock,
+            image = image,
+            description = description,
+            imageResId = 0
+        )
+    }
+
     private fun loadData() {
         viewModelScope.launch {
-            val mockFeaturedItems = listOf(
-                MenuItem("1", "Nước ép lê", 50000.0, "Nước uống", imageResId = R.drawable.nuoceple),
-                MenuItem("2", "Nước ép dâu", 55000.0, "Nước uống", imageResId = R.drawable.nuocepdau),
-                MenuItem("3", "Nước ép thơm", 45000.0, "Nước uống", imageResId = R.drawable.nuocepthom),
-                MenuItem("4", "Nước ép táo", 48000.0, "Nước uống", imageResId = R.drawable.nuoceptao)
-            )
-            _featuredItems.value = mockFeaturedItems
+            menuItemDao.getAvailableMenuItems()
+                .collect { entities ->
+                    _featuredItems.value = entities.map { it.toMenuItem() }
+                        .sortedByDescending { it.orderCount }
+                        .take(4)
+                }
 
-            val mockCategories = listOf(
-                MenuCategory("Món chính", R.drawable.food1),
-                MenuCategory("Món phụ", R.drawable.food2),
-                MenuCategory("Đồ uống", R.drawable.drink)
-            )
-            _categories.value = mockCategories
+            combine(
+                categoryDao.getAllCategories(),
+                menuItemDao.getAllMenuItems()
+            ) { categories, menuItems ->
+                val menuItemList = menuItems.map { it.toMenuItem() }
+                categories.map { category ->
+                    MenuCategory(
+                        id = category.id,
+                        name = category.name,
+                        items = menuItemList.filter { it.categoryId == category.id }
+                    )
+                }
+            }.collect { menuCategories ->
+                _categories.value = menuCategories
+            }
         }
     }
 
-    fun getFeaturedItems(): List<MenuItem> {
+    fun searchMenuItems(query: String) {
+        viewModelScope.launch {
+            if (query.isBlank()) {
+                menuItemDao.getAvailableMenuItems()
+                    .collect { entities ->
+                        _featuredItems.value = entities.map { it.toMenuItem() }
+                            .sortedByDescending { it.orderCount }
+                            .take(4)
+                    }
+
+                combine(
+                    categoryDao.getAllCategories(),
+                    menuItemDao.getAllMenuItems()
+                ) { categories, menuItems ->
+                    val menuItemList = menuItems.map { it.toMenuItem() }
+                    categories.map { category ->
+                        MenuCategory(
+                            id = category.id,
+                            name = category.name,
+                            items = menuItemList.filter { it.categoryId == category.id }
+                        )
+                    }
+                }.collect { menuCategories ->
+                    _categories.value = menuCategories
+                }
+            } else {
+                menuItemDao.getAllMenuItems()
+                    .collect { entities ->
+                        val allItems = entities.map { it.toMenuItem() }
+                        val filteredItems = allItems.filter {
+                            it.name.contains(query, ignoreCase = true) && it.inStock
+                        }
+                        _featuredItems.value = filteredItems.take(4)
+
+                        combine(
+                            categoryDao.getAllCategories(),
+                            menuItemDao.getAllMenuItems()
+                        ) { categories, menuItems ->
+                            val menuItemList = menuItems.map { it.toMenuItem() }
+                                .filter { it.name.contains(query, ignoreCase = true) && it.inStock }
+                            categories.map { category ->
+                                MenuCategory(
+                                    id = category.id,
+                                    name = category.name,
+                                    items = menuItemList.filter { it.categoryId == category.id }
+                                )
+                            }
+                        }.collect { menuCategories ->
+                            _categories.value = menuCategories
+                        }
+                    }
+            }
+        }
+    }
+
+    open fun getFeaturedItems(): List<MenuItem> {
         return _featuredItems.value
     }
 
-    fun getCategories(): List<MenuCategory> {
+    open fun getCategories(): List<MenuCategory> {
         return _categories.value
     }
 }
-
-data class MenuCategory(
-    val name: String,
-    val imageResId: Int
-)
