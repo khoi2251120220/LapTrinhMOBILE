@@ -29,7 +29,9 @@ fun MainScreenUser() {
 
     Scaffold(
         bottomBar = {
-            BottomNavBar(navController = navController, currentRoute = currentRoute)
+            if (currentRoute != "introduce") {
+                BottomNavBar(navController = navController, currentRoute = currentRoute)
+            }
         }
     ) { paddingValues ->
         NavHost(

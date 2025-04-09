@@ -15,5 +15,6 @@ val SecondaryColor = Color(0xFF42A5F5)
 val BackgroundColor = Color(0xFFF5F5F5)
 val TextColor = Color(0xFF212121)
 val SuccessColor = Color(0xFF4CAF50)
+val DangerColor = Color(0xFFF44336)
 val IconActiveColor = Color(0xFF1976D2) // Màu khi icon được chọn
 val IconInactiveColor = Color(0xFF757575) // Màu khi icon không được chọn

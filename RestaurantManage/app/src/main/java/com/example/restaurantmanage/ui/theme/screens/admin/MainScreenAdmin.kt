@@ -21,9 +21,8 @@ fun MainScreenAdmin() {
         composable("table_management") {
             TableManagementScreen(navController)
         }
-        composable("settings") {
-            // Tạm thời hiển thị màn hình trống cho Settings
-            DashboardScreen(navController)
+        composable("user_management") {
+            UserManagementScreen(navController)
         }
     }
 } 

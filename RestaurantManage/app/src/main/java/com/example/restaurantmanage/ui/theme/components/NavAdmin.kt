@@ -108,9 +108,9 @@ fun NavAdmin(
             }
         )
         NavigationBarItem(
-            selected = currentRoute == "settings",
+            selected = currentRoute == "user_management",
             onClick = {
-                navController.navigate("settings") {
+                navController.navigate("user_management") {
                     popUpTo(navController.graph.startDestinationId)
                     launchSingleTop = true
                 }
@@ -118,15 +118,15 @@ fun NavAdmin(
             icon = {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_personal),
-                    contentDescription = "Settings",
+                    contentDescription = "User Management",
                     modifier = Modifier.size(24.dp),
-                    tint = if (currentRoute == "settings") IconActiveColor else IconInactiveColor
+                    tint = if (currentRoute == "user_management") IconActiveColor else IconInactiveColor
                 )
             },
             label = {
                 Text(
-                    text = "Settings",
-                    color = if (currentRoute == "settings") IconActiveColor else IconInactiveColor
+                    text = "User",
+                    color = if (currentRoute == "user_management") IconActiveColor else IconInactiveColor
                 )
             }
         )

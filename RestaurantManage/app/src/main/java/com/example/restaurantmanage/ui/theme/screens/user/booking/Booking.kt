@@ -36,7 +36,7 @@ import com.example.restaurantmanage.data.viewmodels.BookingViewModel
 import com.example.restaurantmanage.ui.theme.RestaurantManageTheme
 import com.example.restaurantmanage.ui.theme.components.AppBar
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import com.example.restaurantmanage.data.viewmodels.BookingData
+import com.example.restaurantmanage.data.models.BookingData
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -59,8 +59,8 @@ fun BookingDialog(
     )
     
     val timePickerState = rememberTimePickerState(
-        initialHour = selectedDate.hours,
-        initialMinute = selectedDate.minutes
+        initialHour = Calendar.getInstance().apply { time = selectedDate }.get(Calendar.HOUR_OF_DAY),
+        initialMinute = Calendar.getInstance().apply { time = selectedDate }.get(Calendar.MINUTE)
     )
     
     AlertDialog(
@@ -169,14 +169,11 @@ fun BookingDialog(
                 TextButton(
                     onClick = {
                         datePickerState.selectedDateMillis?.let { millis ->
-                            val newDate = Date(millis)
-                            selectedDate = Date(
-                                newDate.year,
-                                newDate.month,
-                                newDate.date,
-                                selectedDate.hours,
-                                selectedDate.minutes
-                            )
+                            val calendar = Calendar.getInstance().apply {
+                                time = selectedDate // Preserve existing time
+                                timeInMillis = millis // Set new date
+                            }
+                            selectedDate = calendar.time
                         }
                         showDatePicker = false
                     }
@@ -203,13 +200,12 @@ fun BookingDialog(
             confirmButton = {
                 TextButton(
                     onClick = {
-                        selectedDate = Date(
-                            selectedDate.year,
-                            selectedDate.month,
-                            selectedDate.date,
-                            timePickerState.hour,
-                            timePickerState.minute
-                        )
+                        val calendar = Calendar.getInstance().apply {
+                            time = selectedDate // Get existing date
+                            set(Calendar.HOUR_OF_DAY, timePickerState.hour)
+                            set(Calendar.MINUTE, timePickerState.minute)
+                        }
+                        selectedDate = calendar.time
                         showTimePicker = false
                     }
                 ) {

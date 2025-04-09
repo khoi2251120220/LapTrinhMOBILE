@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.util.*
+import com.example.restaurantmanage.data.models.BookingData
 
 class BookingViewModel : ViewModel() {
     private val _data = MutableStateFlow<List<BookingData>>(emptyList())
@@ -121,10 +122,3 @@ class BookingViewModel : ViewModel() {
     }
 }
 
-data class BookingData(
-    val locationName: String,
-    val rating: Float,
-    val reviewCount: Int,
-    val price: String,
-    val imageResId: Int
-)
