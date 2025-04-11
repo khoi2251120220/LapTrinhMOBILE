@@ -23,7 +23,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.example.restaurantmanage.data.viewmodels.DashboardViewModel
+import com.example.restaurantmanage.viewmodels.DashboardViewModel
 import com.example.restaurantmanage.ui.theme.components.AdminAppBar
 import com.example.restaurantmanage.ui.theme.components.NavAdmin
 import com.example.restaurantmanage.ui.theme.RestaurantManageTheme

@@ -32,7 +32,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
-import com.example.restaurantmanage.data.viewmodels.BookingViewModel
+import com.example.restaurantmanage.viewmodels.BookingViewModel
 import com.example.restaurantmanage.ui.theme.RestaurantManageTheme
 import com.example.restaurantmanage.ui.theme.components.AppBar
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController

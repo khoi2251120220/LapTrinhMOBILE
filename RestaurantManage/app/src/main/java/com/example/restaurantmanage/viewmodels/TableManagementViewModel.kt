@@ -1,4 +1,4 @@
-package com.example.restaurantmanage.data.viewmodels
+package com.example.restaurantmanage.viewmodels
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope

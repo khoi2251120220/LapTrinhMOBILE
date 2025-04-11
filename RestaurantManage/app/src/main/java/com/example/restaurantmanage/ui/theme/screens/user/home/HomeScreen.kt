@@ -40,10 +40,10 @@ import com.example.restaurantmanage.data.local.entity.CategoryEntity
 import com.example.restaurantmanage.data.local.entity.MenuItemEntity
 import com.example.restaurantmanage.data.models.MenuCategory
 import com.example.restaurantmanage.data.models.MenuItem
-import com.example.restaurantmanage.data.viewmodels.CartViewModel
-import com.example.restaurantmanage.data.viewmodels.CartViewModelFactory
-import com.example.restaurantmanage.data.viewmodels.HomeViewModel
-import com.example.restaurantmanage.data.viewmodels.HomeViewModelFactory
+import com.example.restaurantmanage.viewmodels.CartViewModel
+import com.example.restaurantmanage.viewmodels.CartViewModelFactory
+import com.example.restaurantmanage.viewmodels.HomeViewModel
+import com.example.restaurantmanage.viewmodels.HomeViewModelFactory
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

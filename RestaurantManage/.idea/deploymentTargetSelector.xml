@@ -2,27 +2,18 @@
 <project version="4">
   <component name="deploymentTargetSelector">
     <selectionStates>
-
       <SelectionState runConfigName="app">
-
-      <SelectionState runConfigName="PreviewCartScreen">
-
         <option name="selectionMode" value="DROPDOWN" />
+        <DropdownSelection timestamp="2025-04-11T03:05:08.137654100Z">
+          <Target type="DEFAULT_BOOT">
+            <handle>
+              <DeviceId pluginId="LocalEmulator" identifier="path=C:\Users\LAPTOP TCC\.android\avd\Medium_Phone.avd" />
+            </handle>
+          </Target>
+        </DropdownSelection>
+        <DialogSelection />
       </SelectionState>
-      <SelectionState runConfigName="PreviewIntroduceScreen">
-        <option name="selectionMode" value="DROPDOWN" />
-      </SelectionState>
-      <SelectionState runConfigName="PreviewHomeScreen">
-        <option name="selectionMode" value="DROPDOWN" />
-      </SelectionState>
-      <SelectionState runConfigName="MenuReview">
-        <option name="selectionMode" value="DROPDOWN" />
-      </SelectionState>
-
       <SelectionState runConfigName="BookingScreenPreview">
-        <option name="selectionMode" value="DROPDOWN" />
-      </SelectionState>
-      <SelectionState runConfigName="PreviewCartScreen">
         <option name="selectionMode" value="DROPDOWN" />
       </SelectionState>
     </selectionStates>

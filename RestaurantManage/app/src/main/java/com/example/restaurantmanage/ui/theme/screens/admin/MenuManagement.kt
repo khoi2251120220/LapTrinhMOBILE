@@ -29,7 +29,7 @@ import com.example.restaurantmanage.ui.theme.components.AdminAppBar
 import com.example.restaurantmanage.ui.theme.components.NavAdmin
 import com.example.restaurantmanage.ui.theme.RestaurantManageTheme
 import com.example.restaurantmanage.ui.theme.PrimaryColor
-import com.example.restaurantmanage.data.viewmodels.MenuViewModel
+import com.example.restaurantmanage.viewmodels.MenuViewModel
 import java.text.NumberFormat
 import java.util.Locale
 
