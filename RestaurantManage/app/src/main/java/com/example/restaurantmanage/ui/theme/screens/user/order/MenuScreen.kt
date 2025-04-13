@@ -29,7 +29,7 @@ fun MenuItemView(menuItem: MenuItem, navController: NavController) {
             .padding(8.dp)
             .clickable {
                 // Navigate to detail screen
-                navController.navigate("detail/${menuItem.id}")
+                navController.navigate("detail/${menuItem.id}")//set up navigation
             }
     ) {
         Image(
@@ -37,13 +37,14 @@ fun MenuItemView(menuItem: MenuItem, navController: NavController) {
             contentDescription = null,
             modifier = Modifier.size(100.dp)
         )
-        Text(text = menuItem.name)
+        Text(text = menuItem.name, fontSize = 18.sp)
         Text(
             text = "${menuItem.price} VND",
-            textDecoration = if (menuItem.orderCount > 0) TextDecoration.LineThrough else null
+            textDecoration = if (menuItem.orderCount > 0) TextDecoration.LineThrough else null,
+            fontSize = 16.sp
         )
         if (menuItem.orderCount > 0) {
-            Text(text = "${menuItem.price * (1 - 0.25)} VND", color = Color.Red) // Example discount
+            Text(text = "${menuItem.price * (1 - 0.25)} VND", color = Color.Red, fontSize = 16.sp) // Example discount
         }
     }
 }
@@ -85,13 +86,13 @@ fun MenuScreen(navController: NavController, categories: List<MenuCategory>) {
 @Composable
 fun MenuReview() {
     val sampleItems = listOf(
-        MenuItem(id = "1", name = "Tôm sốt cà chua", price = 60000.0, category = "Food", image = ""),
-        MenuItem(id = "2", name = "Nước ép trái cây", price = 40000.0, category = "Drink", image = "")
+        MenuItem(id = "1", name = "Tôm sốt cà chua", price = 60000.0, orderCount = 0, image = "", categoryId = 1),
+        MenuItem(id = "2", name = "Nước ép trái cây", price = 40000.0, orderCount = 5, image = "", categoryId = 2)
     )
 
     val sampleCategories = listOf(
-        MenuCategory(id = 1, name = "Thức ăn", items = sampleItems.filter { it.category == "Food" }),
-        MenuCategory(id = 2, name = "Đồ uống", items = sampleItems.filter { it.category == "Drink" })
+        MenuCategory(id = 1, name = "Thức ăn", items = sampleItems.filter { it.categoryId == 1 }),
+        MenuCategory(id = 2, name = "Đồ uống", items = sampleItems.filter { it.categoryId == 2 })
     )
 
     MenuScreen(navController = rememberNavController(), categories = sampleCategories)

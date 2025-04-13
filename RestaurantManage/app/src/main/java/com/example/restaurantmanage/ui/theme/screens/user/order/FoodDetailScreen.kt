@@ -1,5 +1,6 @@
 package com.example.restaurantmanage.ui.theme.screens.user.order
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -17,14 +18,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import coil.compose.rememberAsyncImagePainter
 import com.example.restaurantmanage.ui.theme.RestaurantManageTheme
 import com.example.restaurantmanage.ui.theme.components.AppBar
 
 @Composable
 fun FoodDetailScreen(
     foodName: String, // Tên món ăn
-    priceRange: String, // Giá tiền
+    price: Double, // Giá tiền
     description: String, // Mô tả món ăn
+    imageUrl: String, // URL hình ảnh món ăn
     navController: NavController // Thêm NavController để truyền vào AppBar
 ) {
     Scaffold(
@@ -34,13 +37,11 @@ fun FoodDetailScreen(
                     .fillMaxWidth()
                     .padding(8.dp)
             ) {
-
                 AppBar(
                     title = "Chi tiết món ăn",
                     navController = navController,
                     showBackButton = true
                 )
-
 
                 IconButton(
                     onClick = { navController.navigate("cart") },
@@ -63,19 +64,15 @@ fun FoodDetailScreen(
                 .background(Color.White) // Nền trắng
                 .padding(innerPadding) // Padding để tránh chồng lấn với TopBar và BottomNavBar
         ) {
-            // Placeholder cho hình ảnh món ăn (sẽ thêm sau)
-            Box(
+            // Hình ảnh món ăn
+            Image(
+                painter = rememberAsyncImagePainter(imageUrl),
+                contentDescription = "Hình ảnh $foodName",
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(200.dp) // Chiều cao tương tự hình ảnh trong mẫu
-                    .background(Color.LightGray) // Màu nền placeholder để dễ nhận biết
-            ) {
-                Text(
-                    text = "Placeholder cho hình ảnh món ăn",
-                    modifier = Modifier.align(Alignment.Center),
-                    color = Color.Gray
-                )
-            }
+                    .height(200.dp)
+                    .background(Color.LightGray) // Màu nền placeholder
+            )
 
             // Nội dung chi tiết
             Column(
@@ -96,7 +93,7 @@ fun FoodDetailScreen(
 
                 // Giá tiền
                 Text(
-                    text = priceRange,
+                    text = "${price.toInt()} VNĐ",
                     style = TextStyle(
                         fontSize = 16.sp,
                         color = Color.Black
@@ -156,8 +153,9 @@ fun FoodDetailScreenPreview() {
     RestaurantManageTheme {
         FoodDetailScreen(
             foodName = "Tên món ăn",
-            priceRange = "20.000 VNĐ - 30.000 VNĐ",
+            price = 20000.0,
             description = "Gợi ý lựa chọn món, nguyên liệu, thành phần chính cơ bản, ...",
+            imageUrl = "", // Placeholder cho hình ảnh
             navController = rememberNavController() // Sử dụng rememberNavController trong preview
         )
     }
