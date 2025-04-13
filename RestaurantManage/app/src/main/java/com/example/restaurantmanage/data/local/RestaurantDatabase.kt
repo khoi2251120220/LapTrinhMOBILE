@@ -18,9 +18,7 @@ import com.example.restaurantmanage.data.local.entity.*
         ReservationEntity::class,
         OrderEntity::class,
         OrderItemEntity::class,
-
-//        BookingEntity::class
-
+        BookingEntity::class,
         CartItemEntity::class
 
     ],
@@ -36,7 +34,7 @@ abstract class RestaurantDatabase : RoomDatabase() {
     abstract fun orderDao(): OrderDao
     abstract fun orderItemDao(): OrderItemDao
 
-//    abstract fun bookingDao(): BookingDao
+    abstract fun bookingDao(): BookingDao
 
     abstract fun cartItemDao(): CartItemDao
 

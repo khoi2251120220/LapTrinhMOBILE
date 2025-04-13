@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
@@ -32,11 +33,10 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
-import com.example.restaurantmanage.viewmodels.BookingViewModel
 import com.example.restaurantmanage.ui.theme.RestaurantManageTheme
 import com.example.restaurantmanage.ui.theme.components.AppBar
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import com.example.restaurantmanage.data.models.BookingData
+import com.example.restaurantmanage.viewmodels.BookingViewModel
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -53,16 +53,16 @@ fun BookingDialog(
     var selectedDate by remember { mutableStateOf(Date()) }
     var showDatePicker by remember { mutableStateOf(false) }
     var showTimePicker by remember { mutableStateOf(false) }
-    
+
     val datePickerState = rememberDatePickerState(
         initialSelectedDateMillis = selectedDate.time
     )
-    
+
     val timePickerState = rememberTimePickerState(
         initialHour = Calendar.getInstance().apply { time = selectedDate }.get(Calendar.HOUR_OF_DAY),
         initialMinute = Calendar.getInstance().apply { time = selectedDate }.get(Calendar.MINUTE)
     )
-    
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Đặt bàn") },
@@ -79,9 +79,9 @@ fun BookingDialog(
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
-                
+
                 Spacer(modifier = Modifier.height(16.dp))
-                
+
                 OutlinedTextField(
                     value = phoneNumber,
                     onValueChange = { phoneNumber = it },
@@ -90,14 +90,14 @@ fun BookingDialog(
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone)
                 )
-                
+
                 Spacer(modifier = Modifier.height(16.dp))
-                
+
                 OutlinedTextField(
                     value = numberOfGuests,
-                    onValueChange = { 
+                    onValueChange = {
                         if (it.isEmpty() || it.toIntOrNull() != null) {
-                            numberOfGuests = it 
+                            numberOfGuests = it
                         }
                     },
                     label = { Text("Số lượng người") },
@@ -105,9 +105,9 @@ fun BookingDialog(
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                 )
-                
+
                 Spacer(modifier = Modifier.height(16.dp))
-                
+
                 OutlinedTextField(
                     value = note,
                     onValueChange = { note = it },
@@ -116,9 +116,9 @@ fun BookingDialog(
                     minLines = 2,
                     maxLines = 4
                 )
-                
+
                 Spacer(modifier = Modifier.height(16.dp))
-                
+
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
@@ -128,14 +128,14 @@ fun BookingDialog(
                     ) {
                         Text("Chọn ngày")
                     }
-                    
+
                     OutlinedButton(
                         onClick = { showTimePicker = true }
                     ) {
                         Text("Chọn giờ")
                     }
                 }
-                
+
                 Text(
                     text = "Thời gian đã chọn: ${SimpleDateFormat("dd/MM/yyyy HH:mm", Locale("vi")).format(selectedDate)}",
                     modifier = Modifier.padding(top = 8.dp),
@@ -161,7 +161,7 @@ fun BookingDialog(
             }
         }
     )
-    
+
     if (showDatePicker) {
         DatePickerDialog(
             onDismissRequest = { showDatePicker = false },
@@ -170,8 +170,8 @@ fun BookingDialog(
                     onClick = {
                         datePickerState.selectedDateMillis?.let { millis ->
                             val calendar = Calendar.getInstance().apply {
-                                time = selectedDate // Preserve existing time
-                                timeInMillis = millis // Set new date
+                                time = selectedDate // Giữ nguyên thời gian hiện tại
+                                timeInMillis = millis // Cập nhật ngày mới
                             }
                             selectedDate = calendar.time
                         }
@@ -193,7 +193,7 @@ fun BookingDialog(
             )
         }
     }
-    
+
     if (showTimePicker) {
         AlertDialog(
             onDismissRequest = { showTimePicker = false },
@@ -201,7 +201,7 @@ fun BookingDialog(
                 TextButton(
                     onClick = {
                         val calendar = Calendar.getInstance().apply {
-                            time = selectedDate // Get existing date
+                            time = selectedDate // Giữ nguyên ngày hiện tại
                             set(Calendar.HOUR_OF_DAY, timePickerState.hour)
                             set(Calendar.MINUTE, timePickerState.minute)
                         }
@@ -231,10 +231,9 @@ fun BookingScreen(navController: NavController) {
     val viewModel: BookingViewModel = viewModel()
     val bookingData = viewModel.data.collectAsState().value
     val navBackStackEntry by navController.currentBackStackEntryAsState()
-    val currentRoute = navBackStackEntry?.destination?.route
     val keyboardController = LocalSoftwareKeyboardController.current
     val textSearch = remember { mutableStateOf("") }
-    
+
     var showBookingDialog by remember { mutableStateOf(false) }
     var selectedBooking by remember { mutableStateOf<BookingData?>(null) }
 
@@ -374,7 +373,7 @@ fun BookingScreen(navController: NavController) {
                                     color = MaterialTheme.colorScheme.primary
                                 )
                                 Button(
-                                    onClick = { 
+                                    onClick = {
                                         selectedBooking = booking
                                         showBookingDialog = true
                                     }
@@ -388,10 +387,10 @@ fun BookingScreen(navController: NavController) {
             }
         }
     }
-    
+
     if (showBookingDialog && selectedBooking != null) {
         BookingDialog(
-            onDismiss = { 
+            onDismiss = {
                 showBookingDialog = false
                 selectedBooking = null
             },
