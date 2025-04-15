@@ -49,7 +49,7 @@ open class CartViewModel(
             orderCount = 0,
             inStock = true,
             image = image,
-            description = description,
+            description = description ?: "",
             imageResId = 0
         )
         return CartItem(menuItem, quantity)

@@ -32,7 +32,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import androidx.navigation.compose.currentBackStackEntryAsState
 import com.example.restaurantmanage.ui.theme.RestaurantManageTheme
 import com.example.restaurantmanage.ui.theme.components.AppBar
 import com.example.restaurantmanage.data.models.BookingData
@@ -43,6 +42,7 @@ import java.util.*
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BookingDialog(
+    booking: BookingData,
     onDismiss: () -> Unit,
     onConfirm: (String, String, Int, Date, String) -> Unit
 ) {
@@ -65,7 +65,7 @@ fun BookingDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Đặt bàn") },
+        title = { Text("Đặt bàn - ${booking.locationName}") },
         text = {
             Column(
                 modifier = Modifier
@@ -77,7 +77,8 @@ fun BookingDialog(
                     onValueChange = { customerName = it },
                     label = { Text("Họ và tên") },
                     modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
+                    singleLine = true,
+                    isError = customerName.isEmpty()
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -88,7 +89,8 @@ fun BookingDialog(
                     label = { Text("Số điện thoại") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone)
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                    isError = phoneNumber.isEmpty()
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -103,7 +105,8 @@ fun BookingDialog(
                     label = { Text("Số lượng người") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    isError = numberOfGuests.isEmpty()
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -137,7 +140,7 @@ fun BookingDialog(
                 }
 
                 Text(
-                    text = "Thời gian đã chọn: ${SimpleDateFormat("dd/MM/yyyy HH:mm", Locale("vi")).format(selectedDate)}",
+                    text = "Thời gian: ${SimpleDateFormat("dd/MM/yyyy HH:mm", Locale("vi")).format(selectedDate)}",
                     modifier = Modifier.padding(top = 8.dp),
                     fontSize = 14.sp
                 )
@@ -170,8 +173,8 @@ fun BookingDialog(
                     onClick = {
                         datePickerState.selectedDateMillis?.let { millis ->
                             val calendar = Calendar.getInstance().apply {
-                                time = selectedDate // Giữ nguyên thời gian hiện tại
-                                timeInMillis = millis // Cập nhật ngày mới
+                                time = selectedDate
+                                timeInMillis = millis
                             }
                             selectedDate = calendar.time
                         }
@@ -201,7 +204,7 @@ fun BookingDialog(
                 TextButton(
                     onClick = {
                         val calendar = Calendar.getInstance().apply {
-                            time = selectedDate // Giữ nguyên ngày hiện tại
+                            time = selectedDate
                             set(Calendar.HOUR_OF_DAY, timePickerState.hour)
                             set(Calendar.MINUTE, timePickerState.minute)
                         }
@@ -230,10 +233,8 @@ fun BookingDialog(
 fun BookingScreen(navController: NavController) {
     val viewModel: BookingViewModel = viewModel()
     val bookingData = viewModel.data.collectAsState().value
-    val navBackStackEntry by navController.currentBackStackEntryAsState()
     val keyboardController = LocalSoftwareKeyboardController.current
-    val textSearch = remember { mutableStateOf("") }
-
+    var textSearch by remember { mutableStateOf("") }
     var showBookingDialog by remember { mutableStateOf(false) }
     var selectedBooking by remember { mutableStateOf<BookingData?>(null) }
 
@@ -252,8 +253,8 @@ fun BookingScreen(navController: NavController) {
                 .padding(paddingValues)
         ) {
             TextField(
-                value = textSearch.value,
-                onValueChange = { newValue -> textSearch.value = newValue },
+                value = textSearch,
+                onValueChange = { textSearch = it },
                 label = {
                     Text(
                         text = buildAnnotatedString {
@@ -292,13 +293,13 @@ fun BookingScreen(navController: NavController) {
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Default.Search,
-                        contentDescription = null,
+                        contentDescription = null
                     )
                 },
                 trailingIcon = {
                     Icon(
                         imageVector = Icons.Default.Edit,
-                        contentDescription = null,
+                        contentDescription = null
                     )
                 },
                 keyboardOptions = KeyboardOptions(
@@ -311,7 +312,7 @@ fun BookingScreen(navController: NavController) {
                     }
                 ),
                 modifier = Modifier
-                    .size(width = 450.dp, height = 90.dp)
+                    .fillMaxWidth()
                     .padding(16.dp)
                     .clip(RoundedCornerShape(12.dp))
                     .background(Color(0xFFA8A2A2)),
@@ -330,7 +331,7 @@ fun BookingScreen(navController: NavController) {
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(bottom = 16.dp),
-                        elevation = CardDefaults.cardElevation(4.dp)
+                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
                             Box(
@@ -378,7 +379,7 @@ fun BookingScreen(navController: NavController) {
                                         showBookingDialog = true
                                     }
                                 ) {
-                                    Text(text = "Chọn")
+                                    Text("Chọn")
                                 }
                             }
                         }
@@ -390,6 +391,7 @@ fun BookingScreen(navController: NavController) {
 
     if (showBookingDialog && selectedBooking != null) {
         BookingDialog(
+            booking = selectedBooking!!,
             onDismiss = {
                 showBookingDialog = false
                 selectedBooking = null
