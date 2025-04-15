@@ -9,7 +9,6 @@ import com.example.restaurantmanage.data.local.converter.Converters
 import com.example.restaurantmanage.data.local.dao.*
 import com.example.restaurantmanage.data.local.entity.*
 
-
 @Database(
     entities = [
         CategoryEntity::class,
@@ -20,9 +19,8 @@ import com.example.restaurantmanage.data.local.entity.*
         OrderItemEntity::class,
         BookingEntity::class,
         CartItemEntity::class
-
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -33,11 +31,8 @@ abstract class RestaurantDatabase : RoomDatabase() {
     abstract fun reservationDao(): ReservationDao
     abstract fun orderDao(): OrderDao
     abstract fun orderItemDao(): OrderItemDao
-
     abstract fun bookingDao(): BookingDao
-
     abstract fun cartItemDao(): CartItemDao
-
 
     companion object {
         @Volatile

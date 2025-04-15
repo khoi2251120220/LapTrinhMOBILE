@@ -2,26 +2,50 @@ package com.example.restaurantmanage.ui.theme.screens.admin
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccessTime
-import androidx.compose.material.icons.filled.CalendarMonth
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material3.*
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
 import androidx.compose.material3.TabRowDefaults.SecondaryIndicator
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
-import androidx.compose.runtime.*
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -30,34 +54,42 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.example.restaurantmanage.viewmodels.TableManagementViewModel
+import com.example.restaurantmanage.data.local.RestaurantDatabase
+import com.example.restaurantmanage.data.local.entity.TableEntity
+import com.example.restaurantmanage.ui.theme.PrimaryColor
+import com.example.restaurantmanage.ui.theme.RestaurantManageTheme
 import com.example.restaurantmanage.ui.theme.components.AdminAppBar
 import com.example.restaurantmanage.ui.theme.components.NavAdmin
-import com.example.restaurantmanage.ui.theme.RestaurantManageTheme
-import com.example.restaurantmanage.ui.theme.PrimaryColor
-import java.text.SimpleDateFormat
-import java.util.*
+import com.example.restaurantmanage.viewmodels.TableManagementViewModel
 
 @Composable
-fun TableManagementScreen(
-    navController: NavController,
-    viewModel: TableManagementViewModel = viewModel()
-) {
+fun TableManagementScreen(navController: NavController) {
+    val context = LocalContext.current
+    val database = RestaurantDatabase.getDatabase(context)
+    val viewModel: TableManagementViewModel = viewModel(
+        factory = TableManagementViewModel.Factory(
+            tableDao = database.tableDao(),
+            bookingDao = database.bookingDao()
+        )
+    )
+
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
-    // Định dạng ngày giờ
-    val dateFormatter = SimpleDateFormat("dd/MM/yyyy", Locale("vi"))
-    val timeFormatter = SimpleDateFormat("HH:mm", Locale("vi"))
-
-    val tables by viewModel.tables.collectAsState()
-    val availableTables by viewModel.availableTables.collectAsState()
-    val reservedTables by viewModel.reservedTables.collectAsState()
-    val occupiedTables by viewModel.occupiedTables.collectAsState()
-
     var selectedTab by remember { mutableIntStateOf(0) }
-    val tabs = listOf("Tất cả (${tables.size})", "Trống (${availableTables.size})",
-        "Đã đặt (${reservedTables.size})", "Đang phục vụ (${occupiedTables.size})")
+    var showAddTableDialog by remember { mutableStateOf(false) }
+
+    val tables by viewModel.tables.collectAsState(initial = emptyList())
+    val availableTables by viewModel.availableTables.collectAsState(initial = emptyList())
+    val reservedTables by viewModel.reservedTables.collectAsState(initial = emptyList())
+    val occupiedTables by viewModel.occupiedTables.collectAsState(initial = emptyList())
+
+    val tabs = listOf(
+        "Tất cả (${tables.size})",
+        "Trống (${availableTables.size})",
+        "Đã đặt (${reservedTables.size})",
+        "Đang phục vụ (${occupiedTables.size})"
+    )
 
     Scaffold(
         topBar = {
@@ -68,6 +100,13 @@ fun TableManagementScreen(
                 onAvatarClick = { /* Logic khi nhấn icon avatar */ }
             )
         },
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = { showAddTableDialog = true }
+            ) {
+                Icon(Icons.Default.Add, contentDescription = "Thêm bàn")
+            }
+        },
         bottomBar = {
             NavAdmin(navController = navController, currentRoute = currentRoute)
         }
@@ -77,7 +116,6 @@ fun TableManagementScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // TabRow cho các tab lọc
             TabRow(
                 selectedTabIndex = selectedTab,
                 containerColor = MaterialTheme.colorScheme.background,
@@ -105,8 +143,13 @@ fun TableManagementScreen(
                 }
             }
 
-            // Hiển thị lưới bàn
-            val filteredTables = viewModel.getFilteredTables(selectedTab)
+            val filteredTables = when (selectedTab) {
+                0 -> tables
+                1 -> availableTables
+                2 -> reservedTables
+                3 -> occupiedTables
+                else -> tables
+            }
 
             if (filteredTables.isEmpty()) {
                 Box(
@@ -133,186 +176,88 @@ fun TableManagementScreen(
                     items(filteredTables) { table ->
                         TableCard(
                             table = table,
-                            dateFormatter = dateFormatter,
-                            timeFormatter = timeFormatter,
-                            onClick = { /* Logic xử lý khi nhấn vào bàn */ }
-                        )
-                    }
-                }
-            }
-
-            // Phần danh sách đặt bàn sắp tới
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                shape = RoundedCornerShape(12.dp),
-                elevation = CardDefaults.cardElevation(2.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        text = "Đặt bàn sắp tới",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    if (reservedTables.isEmpty()) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 16.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = "Không có đặt bàn nào sắp tới",
-                                fontSize = 14.sp,
-                                color = Color.Gray
-                            )
-                        }
-                    } else {
-                        LazyColumn(modifier = Modifier.height(180.dp)) {
-                            items(reservedTables) { table ->
-                                val reservation = table.reservation
-                                if (reservation != null) {
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(vertical = 8.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Surface(
-                                            shape = CircleShape,
-                                            color = Color(0xFFFFA000),
-                                            modifier = Modifier.size(12.dp)
-                                        ) {}
-
-                                        Spacer(modifier = Modifier.width(12.dp))
-
-                                        Column(modifier = Modifier.weight(1f)) {
-                                            Text(
-                                                text = table.name,
-                                                fontWeight = FontWeight.Bold,
-                                                fontSize = 14.sp
-                                            )
-
-                                            Spacer(modifier = Modifier.height(4.dp))
-
-                                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                                Icon(
-                                                    imageVector = Icons.Default.Person,
-                                                    contentDescription = null,
-                                                    tint = Color.Gray,
-                                                    modifier = Modifier.size(16.dp)
-                                                )
-                                                Spacer(modifier = Modifier.width(4.dp))
-                                                Text(
-                                                    text = reservation.customerName,
-                                                    fontSize = 12.sp,
-                                                    color = Color.Gray
-                                                )
-                                            }
-
-                                            Spacer(modifier = Modifier.height(2.dp))
-
-                                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                                Icon(
-                                                    imageVector = Icons.Default.AccessTime,
-                                                    contentDescription = null,
-                                                    tint = Color.Gray,
-                                                    modifier = Modifier.size(16.dp)
-                                                )
-                                                Spacer(modifier = Modifier.width(4.dp))
-                                                Text(
-                                                    text = timeFormatter.format(reservation.time),
-                                                    fontSize = 12.sp,
-                                                    color = Color.Gray
-                                                )
-
-                                                Spacer(modifier = Modifier.width(12.dp))
-
-                                                Icon(
-                                                    imageVector = Icons.Default.CalendarMonth,
-                                                    contentDescription = null,
-                                                    tint = Color.Gray,
-                                                    modifier = Modifier.size(16.dp)
-                                                )
-                                                Spacer(modifier = Modifier.width(4.dp))
-                                                Text(
-                                                    text = dateFormatter.format(reservation.time),
-                                                    fontSize = 12.sp,
-                                                    color = Color.Gray
-                                                )
-                                            }
-                                        }
-
-                                        Surface(
-                                            shape = RoundedCornerShape(4.dp),
-                                            color = Color(0xFFE3F2FD),
-                                            modifier = Modifier.padding(start = 8.dp)
-                                        ) {
-                                            Row(
-                                                modifier = Modifier.padding(4.dp),
-                                                verticalAlignment = Alignment.CenterVertically
-                                            ) {
-                                                Icon(
-                                                    imageVector = Icons.Default.Person,
-                                                    contentDescription = null,
-                                                    tint = Color(0xFF2196F3),
-                                                    modifier = Modifier.size(16.dp)
-                                                )
-                                                Spacer(modifier = Modifier.width(4.dp))
-                                                Text(
-                                                    text = "${reservation.numberOfGuests}",
-                                                    fontSize = 12.sp,
-                                                    color = Color(0xFF2196F3),
-                                                    fontWeight = FontWeight.Medium
-                                                )
-                                            }
-                                        }
-                                    }
-
-                                    if (table != reservedTables.last()) {
-                                        HorizontalDivider(
-                                            modifier = Modifier.padding(vertical = 4.dp),
-                                            color = Color.LightGray.copy(alpha = 0.5f)
-                                        )
-                                    }
-                                }
+                            onClick = {
+                                // Xử lý khi nhấn vào bàn
                             }
-                        }
+                        )
                     }
                 }
             }
         }
     }
+
+    if (showAddTableDialog) {
+        var tableName by remember { mutableStateOf("") }
+        var capacity by remember { mutableStateOf("") }
+
+        AlertDialog(
+            onDismissRequest = { showAddTableDialog = false },
+            title = { Text("Thêm bàn mới") },
+            text = {
+                Column {
+                    OutlinedTextField(
+                        value = tableName,
+                        onValueChange = { tableName = it },
+                        label = { Text("Tên bàn") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = capacity,
+                        onValueChange = { if (it.isEmpty() || it.all { char -> char.isDigit() }) capacity = it },
+                        label = { Text("Sức chứa") },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        if (tableName.isNotEmpty() && capacity.isNotEmpty()) {
+                            viewModel.addTable(tableName, capacity.toInt())
+                            showAddTableDialog = false
+                        }
+                    }
+                ) {
+                    Text("Thêm")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showAddTableDialog = false }) {
+                    Text("Hủy")
+                }
+            }
+        )
+    }
 }
 
 @Composable
 fun TableCard(
-    table: com.example.restaurantmanage.data.models.Table,
-    dateFormatter: SimpleDateFormat,
-    timeFormatter: SimpleDateFormat,
+    table: TableEntity,
     onClick: () -> Unit
 ) {
     val cardColor = when (table.status) {
-        com.example.restaurantmanage.data.models.TableStatus.AVAILABLE -> Color(0xFFE8F5E9)
-        com.example.restaurantmanage.data.models.TableStatus.RESERVED -> Color(0xFFFFF8E1)
-        com.example.restaurantmanage.data.models.TableStatus.OCCUPIED -> Color(0xFFFFEBEE)
+        "AVAILABLE" -> Color(0xFFE8F5E9)
+        "RESERVED" -> Color(0xFFFFF8E1)
+        "OCCUPIED" -> Color(0xFFFFEBEE)
+        else -> Color(0xFFE8F5E9)
     }
 
     val statusText = when (table.status) {
-        com.example.restaurantmanage.data.models.TableStatus.AVAILABLE -> "Trống"
-        com.example.restaurantmanage.data.models.TableStatus.RESERVED -> "Đã đặt"
-        com.example.restaurantmanage.data.models.TableStatus.OCCUPIED -> "Đang phục vụ"
+        "AVAILABLE" -> "Trống"
+        "RESERVED" -> "Đã đặt"
+        "OCCUPIED" -> "Đang phục vụ"
+        else -> "Trống"
     }
 
     val statusColor = when (table.status) {
-        com.example.restaurantmanage.data.models.TableStatus.AVAILABLE -> Color(0xFF4CAF50)
-        com.example.restaurantmanage.data.models.TableStatus.RESERVED -> Color(0xFFFFA000)
-        com.example.restaurantmanage.data.models.TableStatus.OCCUPIED -> Color(0xFFF44336)
+        "AVAILABLE" -> Color(0xFF4CAF50)
+        "RESERVED" -> Color(0xFFFFA000)
+        "OCCUPIED" -> Color(0xFFF44336)
+        else -> Color(0xFF4CAF50)
     }
 
     Card(
@@ -359,73 +304,6 @@ fun TableCard(
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Medium
                 )
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            when (table.status) {
-                com.example.restaurantmanage.data.models.TableStatus.RESERVED -> {
-                    table.reservation?.let { reservation ->
-                        HorizontalDivider(color = Color.LightGray.copy(alpha = 0.5f))
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = Icons.Default.Person,
-                                contentDescription = null,
-                                tint = Color.Gray,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = reservation.customerName,
-                                fontSize = 12.sp,
-                                color = Color.Gray
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = Icons.Default.AccessTime,
-                                contentDescription = null,
-                                tint = Color.Gray,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = timeFormatter.format(reservation.time),
-                                fontSize = 12.sp,
-                                color = Color.Gray
-                            )
-                        }
-                    }
-                }
-                com.example.restaurantmanage.data.models.TableStatus.OCCUPIED -> {
-                    table.currentOrder?.let { order ->
-                        HorizontalDivider(color = Color.LightGray.copy(alpha = 0.5f))
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = Icons.Default.AccessTime,
-                                contentDescription = null,
-                                tint = Color.Gray,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = timeFormatter.format(order.startTime),
-                                fontSize = 12.sp,
-                                color = Color.Gray
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = "${order.items.size} món",
-                            fontSize = 12.sp,
-                            color = Color.Gray
-                        )
-                    }
-                }
-                else -> {}
             }
         }
     }

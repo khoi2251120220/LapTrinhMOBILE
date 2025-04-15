@@ -17,6 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
@@ -27,22 +28,25 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.restaurantmanage.R
 import com.example.restaurantmanage.ui.theme.RestaurantManageTheme
 import com.example.restaurantmanage.ui.theme.components.AppBar
-import com.example.restaurantmanage.data.models.BookingData
 import com.example.restaurantmanage.viewmodels.BookingViewModel
+import com.example.restaurantmanage.data.local.RestaurantDatabase
+import com.example.restaurantmanage.data.local.entity.TableEntity
 import java.text.SimpleDateFormat
 import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BookingDialog(
-    booking: BookingData,
+    table: TableEntity,
     onDismiss: () -> Unit,
     onConfirm: (String, String, Int, Date, String) -> Unit
 ) {
@@ -65,7 +69,7 @@ fun BookingDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Đặt bàn - ${booking.locationName}") },
+        title = { Text("Đặt bàn - ${table.name}") },
         text = {
             Column(
                 modifier = Modifier
@@ -98,7 +102,7 @@ fun BookingDialog(
                 OutlinedTextField(
                     value = numberOfGuests,
                     onValueChange = {
-                        if (it.isEmpty() || it.toIntOrNull() != null) {
+                        if (it.isEmpty() || (it.toIntOrNull() != null)) {
                             numberOfGuests = it
                         }
                     },
@@ -106,8 +110,17 @@ fun BookingDialog(
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    isError = numberOfGuests.isEmpty()
+                    isError = numberOfGuests.isEmpty() || ((numberOfGuests.toIntOrNull() ?: 0) > table.capacity)
                 )
+
+                if (numberOfGuests.toIntOrNull() ?: 0 > table.capacity) {
+                    Text(
+                        text = "Số lượng người vượt quá sức chứa của bàn (${table.capacity} người)",
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(start = 16.dp, top = 4.dp)
+                    )
+                }
 
                 Spacer(modifier = Modifier.height(16.dp))
 
@@ -149,11 +162,15 @@ fun BookingDialog(
         confirmButton = {
             Button(
                 onClick = {
-                    if (customerName.isNotEmpty() && phoneNumber.isNotEmpty() && numberOfGuests.isNotEmpty()) {
+                    if ((customerName.isNotEmpty() && phoneNumber.isNotEmpty() && 
+                        numberOfGuests.isNotEmpty()) && 
+                        ((numberOfGuests.toIntOrNull() ?: 0) <= table.capacity)) {
                         onConfirm(customerName, phoneNumber, numberOfGuests.toInt(), selectedDate, note)
                     }
                 },
-                enabled = customerName.isNotEmpty() && phoneNumber.isNotEmpty() && numberOfGuests.isNotEmpty()
+                enabled = (customerName.isNotEmpty() && phoneNumber.isNotEmpty() && 
+                          numberOfGuests.isNotEmpty()) &&
+                          ((numberOfGuests.toIntOrNull() ?: 0) <= table.capacity)
             ) {
                 Text("Xác nhận")
             }
@@ -231,12 +248,20 @@ fun BookingDialog(
 
 @Composable
 fun BookingScreen(navController: NavController) {
-    val viewModel: BookingViewModel = viewModel()
-    val bookingData = viewModel.data.collectAsState().value
+    val context = LocalContext.current
+    val database = RestaurantDatabase.getDatabase(context)
+    val viewModel: BookingViewModel = viewModel(
+        factory = BookingViewModel.Factory(
+            bookingDao = database.bookingDao(),
+            tableDao = database.tableDao()
+        )
+    )
+
+    val availableTables by viewModel.availableTables.collectAsState(initial = emptyList())
     val keyboardController = LocalSoftwareKeyboardController.current
     var textSearch by remember { mutableStateOf("") }
     var showBookingDialog by remember { mutableStateOf(false) }
-    var selectedBooking by remember { mutableStateOf<BookingData?>(null) }
+    var selectedTable by remember { mutableStateOf<TableEntity?>(null) }
 
     Scaffold(
         topBar = {
@@ -321,65 +346,79 @@ fun BookingScreen(navController: NavController) {
                     unfocusedIndicatorColor = Color.Transparent
                 )
             )
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 16.dp)
-            ) {
-                items(bookingData) { booking ->
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 16.dp),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(150.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Image(
-                                    painter = painterResource(id = booking.imageResId),
-                                    contentDescription = null,
-                                    modifier = Modifier.fillMaxSize()
-                                )
-                            }
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                text = booking.locationName,
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.padding(vertical = 4.dp)
-                            ) {
+
+            if (availableTables.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "Không có bàn trống",
+                        fontSize = 16.sp,
+                        color = Color.Gray,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 16.dp)
+                ) {
+                    items(availableTables) { table ->
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 16.dp),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(150.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Image(
+                                        painter = painterResource(id = R.drawable.table_image),
+                                        contentDescription = null,
+                                        modifier = Modifier.fillMaxWidth(),
+                                        contentScale = ContentScale.Crop
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(8.dp))
                                 Text(
-                                    text = "★ ${booking.rating} (${booking.reviewCount} đánh giá)",
+                                    text = table.name,
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    text = "Sức chứa: ${table.capacity} người",
                                     fontSize = 14.sp,
                                     color = Color.Gray
                                 )
-                            }
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = "${booking.price} /Phòng",
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
-                                Button(
-                                    onClick = {
-                                        selectedBooking = booking
-                                        showBookingDialog = true
-                                    }
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Text("Chọn")
+                                    Text(
+                                        text = "500,000 VND",
+                                        fontSize = 16.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                    Button(
+                                        onClick = {
+                                            selectedTable = table
+                                            showBookingDialog = true
+                                        }
+                                    ) {
+                                        Text("Đặt bàn")
+                                    }
                                 }
                             }
                         }
@@ -389,16 +428,16 @@ fun BookingScreen(navController: NavController) {
         }
     }
 
-    if (showBookingDialog && selectedBooking != null) {
+    if (showBookingDialog && selectedTable != null) {
         BookingDialog(
-            booking = selectedBooking!!,
+            table = selectedTable!!,
             onDismiss = {
                 showBookingDialog = false
-                selectedBooking = null
+                selectedTable = null
             },
             onConfirm = { name, phone, guests, date, note ->
                 viewModel.createBooking(
-                    tableName = selectedBooking!!.locationName,
+                    tableId = selectedTable!!.id,
                     customerName = name,
                     phoneNumber = phone,
                     numberOfGuests = guests,
@@ -406,7 +445,7 @@ fun BookingScreen(navController: NavController) {
                     note = note
                 )
                 showBookingDialog = false
-                selectedBooking = null
+                selectedTable = null
             }
         )
     }

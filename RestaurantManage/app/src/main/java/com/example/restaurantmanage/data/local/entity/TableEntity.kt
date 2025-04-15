@@ -9,5 +9,5 @@ data class TableEntity(
     val id: Int = 0,
     val name: String,
     val capacity: Int,
-    val status: String // Store enum as String
+    val status: String = "AVAILABLE" // AVAILABLE, RESERVED, OCCUPIED
 ) 

@@ -28,34 +28,34 @@ class MenuViewModel : ViewModel() {
                     id = 1, 
                     name = "Món phổ biến", 
                     items = listOf(
-                        MenuItem(id = "1", name = "Tôm xào chua ngọt", price = 150000.0, category = "Món chính", orderCount = 120),
-                        MenuItem(id = "2", name = "Cá hồi nướng", price = 180000.0, category = "Món chính", orderCount = 98),
-                        MenuItem(id = "3", name = "Gà nướng", price = 140000.0, category = "Món chính", orderCount = 85, inStock = false)
+                        MenuItem(id = "1", name = "Tôm xào chua ngọt", price = 150000.0, categoryId = 1, orderCount = 120),
+                        MenuItem(id = "2", name = "Cá hồi nướng", price = 180000.0, categoryId = 1, orderCount = 98),
+                        MenuItem(id = "3", name = "Gà nướng", price = 140000.0, categoryId = 1, orderCount = 85, inStock = false)
                     )
                 ),
                 MenuCategory(
                     id = 2, 
                     name = "Món chính", 
                     items = listOf(
-                        MenuItem(id = "4", name = "Bò xào nấm", price = 160000.0, category = "Món chính", orderCount = 75),
-                        MenuItem(id = "5", name = "Sườn xào chua ngọt", price = 120000.0, category = "Món chính", orderCount = 82)
+                        MenuItem(id = "4", name = "Bò xào nấm", price = 160000.0, categoryId = 2, orderCount = 75),
+                        MenuItem(id = "5", name = "Sườn xào chua ngọt", price = 120000.0, categoryId = 2, orderCount = 82)
                     )
                 ),
                 MenuCategory(
                     id = 3, 
                     name = "Món tráng miệng", 
                     items = listOf(
-                        MenuItem(id = "6", name = "Bánh flan", price = 25000.0, category = "Tráng miệng", orderCount = 150),
-                        MenuItem(id = "7", name = "Chè thái", price = 30000.0, category = "Tráng miệng", orderCount = 125)
+                        MenuItem(id = "6", name = "Bánh flan", price = 25000.0, categoryId = 3, orderCount = 150),
+                        MenuItem(id = "7", name = "Chè thái", price = 30000.0, categoryId = 3, orderCount = 125)
                     )
                 ),
                 MenuCategory(
                     id = 4, 
                     name = "Đồ uống", 
                     items = listOf(
-                        MenuItem(id = "8", name = "Trà đào", price = 35000.0, category = "Đồ uống", orderCount = 200),
-                        MenuItem(id = "9", name = "Cà phê đen", price = 25000.0, category = "Đồ uống", orderCount = 180),
-                        MenuItem(id = "10", name = "Sinh tố xoài", price = 40000.0, category = "Đồ uống", orderCount = 90)
+                        MenuItem(id = "8", name = "Trà đào", price = 35000.0, categoryId = 4, orderCount = 200),
+                        MenuItem(id = "9", name = "Cà phê đen", price = 25000.0, categoryId = 4, orderCount = 180),
+                        MenuItem(id = "10", name = "Sinh tố xoài", price = 40000.0, categoryId = 4, orderCount = 90)
                     )
                 )
             )
@@ -88,22 +88,20 @@ class MenuViewModel : ViewModel() {
         }
     }
 
-    fun addMenuItem(name: String, price: Double, category: String) {
+    fun addMenuItem(name: String, price: Double, categoryId: String) {
         viewModelScope.launch {
             // Generate a new ID (in a real app, this would come from a backend)
             val newId = java.util.UUID.randomUUID().toString()
             
-            // Find the category to add this item to
-            val targetCategoryId = _categories.value.find { it.name == category }?.id 
-                ?: _categories.value.firstOrNull()?.id
-                ?: return@launch
+            // Convert categoryId from string to int
+            val targetCategoryId = categoryId.toIntOrNull() ?: return@launch
             
             // Create new item
             val newItem = MenuItem(
                 id = newId,
                 name = name,
                 price = price,
-                category = category,
+                categoryId = targetCategoryId,
                 orderCount = 0
             )
             

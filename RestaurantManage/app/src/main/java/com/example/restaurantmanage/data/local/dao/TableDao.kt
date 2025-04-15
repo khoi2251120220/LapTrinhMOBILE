@@ -9,17 +9,14 @@ interface TableDao {
     @Query("SELECT * FROM tables")
     fun getAllTables(): Flow<List<TableEntity>>
 
-    @Query("SELECT * FROM tables WHERE id = :id")
-    suspend fun getTableById(id: Int): TableEntity?
-
     @Query("SELECT * FROM tables WHERE status = :status")
     fun getTablesByStatus(status: String): Flow<List<TableEntity>>
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertTable(table: TableEntity)
+    @Query("SELECT * FROM tables WHERE id = :id")
+    suspend fun getTableById(id: Int): TableEntity?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertTables(tables: List<TableEntity>)
+    suspend fun insertTable(table: TableEntity)
 
     @Update
     suspend fun updateTable(table: TableEntity)
@@ -27,6 +24,6 @@ interface TableDao {
     @Delete
     suspend fun deleteTable(table: TableEntity)
 
-    @Query("SELECT * FROM tables WHERE status = 'AVAILABLE'")
-    fun getAvailableTables(): Flow<List<TableEntity>>
+    @Query("UPDATE tables SET status = :status WHERE id = :tableId")
+    suspend fun updateTableStatus(tableId: Int, status: String)
 } 

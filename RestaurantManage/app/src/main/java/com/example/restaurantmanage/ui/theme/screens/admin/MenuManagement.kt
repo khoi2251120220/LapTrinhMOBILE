@@ -333,7 +333,7 @@ fun MenuItemDialog(
 ) {
     var itemName by remember { mutableStateOf(item?.name ?: "") }
     var itemPrice by remember { mutableStateOf(item?.price?.toString() ?: "") }
-    var itemCategory by remember { mutableStateOf(item?.category ?: "") }
+    var itemCategory by remember { mutableStateOf(item?.categoryId?.toString() ?: "") }
     var hasError by remember { mutableStateOf(false) }
     
     AlertDialog(
@@ -398,7 +398,7 @@ fun MenuItemDialog(
                         onSave(
                             itemName,
                             itemPrice.toDoubleOrNull() ?: 0.0,
-                            if (isEdit) item?.category ?: "" else itemCategory
+                            if (isEdit) item?.categoryId?.toString() ?: "" else itemCategory
                         )
                     } else {
                         hasError = true

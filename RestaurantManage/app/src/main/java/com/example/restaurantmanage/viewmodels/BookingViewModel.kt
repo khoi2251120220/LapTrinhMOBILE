@@ -1,40 +1,25 @@
 package com.example.restaurantmanage.viewmodels
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.restaurantmanage.data.local.dao.BookingDao
+import com.example.restaurantmanage.data.local.dao.TableDao
 import com.example.restaurantmanage.data.local.entity.BookingEntity
-import com.example.restaurantmanage.data.models.BookingData
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.util.Date
 
-class BookingViewModel(private val bookingDao: BookingDao) : ViewModel() {
+class BookingViewModel(
+    private val bookingDao: BookingDao,
+    private val tableDao: TableDao
+) : ViewModel() {
 
-    val data: StateFlow<List<BookingData>> = bookingDao.getAllBookings().map { entities ->
-        entities.map { entity ->
-            BookingData(
-                id = entity.id,
-                imageResId = 0,
-                locationName = entity.tableName,
-                rating = 4.5f,
-                reviewCount = 100,
-                price = "500,000 VND",
-                customerName = entity.customerName,
-                phoneNumber = entity.phoneNumber,
-                numberOfGuests = entity.numberOfGuests,
-                time = entity.time,
-                note = entity.note
-            )
-        }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    val bookings = bookingDao.getAllBookings()
+    val availableTables = tableDao.getTablesByStatus("AVAILABLE")
 
     fun createBooking(
-        tableName: String,
+        tableId: Int,
         customerName: String,
         phoneNumber: String,
         numberOfGuests: Int,
@@ -42,15 +27,49 @@ class BookingViewModel(private val bookingDao: BookingDao) : ViewModel() {
         note: String
     ) {
         viewModelScope.launch {
-            val bookingEntity = BookingEntity(
-                tableName = tableName,
+            val booking = BookingEntity(
+                tableId = tableId,
                 customerName = customerName,
                 phoneNumber = phoneNumber,
                 numberOfGuests = numberOfGuests,
                 time = time,
                 note = note
             )
-            bookingDao.insertBooking(bookingEntity)
+            bookingDao.insertBooking(booking)
+            tableDao.updateTableStatus(tableId, "RESERVED")
+        }
+    }
+
+    fun updateBookingStatus(bookingId: Int, status: String) {
+        viewModelScope.launch {
+            bookingDao.updateBookingStatus(bookingId, status)
+        }
+    }
+
+    fun cancelBooking(booking: BookingEntity) {
+        viewModelScope.launch {
+            bookingDao.updateBookingStatus(booking.id, "CANCELLED")
+            tableDao.updateTableStatus(booking.tableId, "AVAILABLE")
+        }
+    }
+
+    fun completeBooking(booking: BookingEntity) {
+        viewModelScope.launch {
+            bookingDao.updateBookingStatus(booking.id, "COMPLETED")
+            tableDao.updateTableStatus(booking.tableId, "OCCUPIED")
+        }
+    }
+
+    class Factory(
+        private val bookingDao: BookingDao,
+        private val tableDao: TableDao
+    ) : ViewModelProvider.Factory {
+        @Suppress("UNCHECKED_CAST")
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            if (modelClass.isAssignableFrom(BookingViewModel::class.java)) {
+                return BookingViewModel(bookingDao, tableDao) as T
+            }
+            throw IllegalArgumentException("Unknown ViewModel class")
         }
     }
 }
