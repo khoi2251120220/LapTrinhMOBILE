@@ -1,26 +1,44 @@
 {
   "project_info": {
-    "project_number": "329341900742",
-    "project_id": "project-restaurant-9c3c2",
-    "storage_bucket": "project-restaurant-9c3c2.firebasestorage.app"
+    "project_number": "752190148410",
+    "project_id": "restaurantmanager-c71e1",
+    "storage_bucket": "restaurantmanager-c71e1.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:329341900742:android:6a28987f8576f1531784c7",
+        "mobilesdk_app_id": "1:752190148410:android:de7b2df4a3f9e9ea620a03",
         "android_client_info": {
           "package_name": "com.example.restaurantmanage"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "752190148410-3deoe67m0r2hgnhhhmf1kloj0vlatbto.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.restaurantmanage",
+            "certificate_hash": "17fa70881310404f996e79d8bb7b640386370b09"
+          }
+        },
+        {
+          "client_id": "752190148410-0k1t2seckuv01u47sdefhp69ot843g4m.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
-          "current_key": "AIzaSyBD-DWpejPCraLqnpF0gcKNQiUJisq3d0w"
+          "current_key": "AIzaSyDROpKI0uYlQ4xIGwbkJ2vDHjFOGkPHyc8"
         }
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "752190148410-0k1t2seckuv01u47sdefhp69ot843g4m.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

@@ -20,13 +20,16 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 
 @Composable
 fun PasswordScreen(navController: NavHostController, email: String) {
     var password by remember { mutableStateOf("") }
-    var passwordVisible by remember { mutableStateOf(false) } // Trạng thái hiển thị mật khẩu
+    var passwordVisible by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf("") }
+    val auth = FirebaseAuth.getInstance()
+    val firestore = FirebaseFirestore.getInstance()
 
     Column(
         modifier = Modifier
@@ -56,6 +59,15 @@ fun PasswordScreen(navController: NavHostController, email: String) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        if (errorMessage.isNotEmpty()) {
+            Text(
+                text = errorMessage,
+                color = Color.Red,
+                fontSize = 14.sp,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+        }
+
         OutlinedTextField(
             value = password,
             onValueChange = { password = it },
@@ -78,15 +90,52 @@ fun PasswordScreen(navController: NavHostController, email: String) {
                         tint = Color.Gray
                     )
                 }
-            }
+            },
+            isError = errorMessage.isNotEmpty()
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
         Button(
             onClick = {
-                // Xử lý đăng nhập ở đây
-                // Ví dụ: navController.navigate("main_screen")
+                if (password.isNotEmpty()) {
+                    auth.signInWithEmailAndPassword(email, password)
+                        .addOnSuccessListener { authResult ->
+                            val userId = authResult.user?.uid
+                            if (userId != null) {
+                                // Kiểm tra vai trò người dùng
+                                firestore.collection("users").document(userId).get()
+                                    .addOnSuccessListener { document ->
+                                        val role = document.getString("role") ?: "user"
+                                        // Lưu thông tin nếu người dùng chưa có trong Firestore
+                                        if (!document.exists()) {
+                                            val userData = hashMapOf(
+                                                "email" to email,
+                                                "role" to "user"
+                                            )
+                                            firestore.collection("users").document(userId).set(userData)
+                                        }
+                                        // Điều hướng dựa trên vai trò
+                                        val destination = if (role == "admin") "admin_screen" else "user_screen"
+                                        navController.navigate(destination) {
+                                            popUpTo("login_screen") { inclusive = true }
+                                        }
+                                    }
+                                    .addOnFailureListener { e ->
+                                        errorMessage = "Lỗi kiểm tra vai trò: ${e.message}"
+                                    }
+                            }
+                        }
+                        .addOnFailureListener { e ->
+                            errorMessage = when {
+                                e.message?.contains("password is invalid") == true -> "Mật khẩu không đúng"
+                                e.message?.contains("no user record") == true -> "Tài khoản không tồn tại"
+                                else -> "Đăng nhập thất bại: ${e.message}"
+                            }
+                        }
+                } else {
+                    errorMessage = "Vui lòng nhập mật khẩu"
+                }
             },
             modifier = Modifier
                 .fillMaxWidth()
@@ -110,9 +159,7 @@ fun PasswordScreen(navController: NavHostController, email: String) {
         Spacer(modifier = Modifier.height(16.dp))
 
         TextButton(
-            onClick = {
-                navController.popBackStack() // Quay lại màn hình trước
-            }
+            onClick = { navController.popBackStack() }
         ) {
             Text(
                 text = "Quay lại",

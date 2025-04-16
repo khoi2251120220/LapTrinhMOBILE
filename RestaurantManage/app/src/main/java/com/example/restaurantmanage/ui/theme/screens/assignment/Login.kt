@@ -27,29 +27,32 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.example.restaurantmanage.R
 import com.google.android.gms.auth.api.identity.BeginSignInRequest
-import com.google.android.gms.auth.api.identity.SignInClient
-import com.google.firebase.auth.FirebaseAuth
 import com.google.android.gms.auth.api.identity.Identity
+import com.google.android.gms.auth.api.identity.SignInClient
 import com.google.firebase.FirebaseApp
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
+import com.google.firebase.firestore.FirebaseFirestore
 
 private const val TAG = "GoogleSignIn"
 
 @Composable
 fun LoginScreen(navController: NavHostController) {
     var email by remember { mutableStateOf("") }
+    var errorMessage by remember { mutableStateOf("") }
     val context = LocalContext.current
     LaunchedEffect(Unit) {
         FirebaseApp.initializeApp(context)
     }
     val auth = FirebaseAuth.getInstance()
+    val firestore = FirebaseFirestore.getInstance()
     val signInClient: SignInClient = Identity.getSignInClient(context)
 
     val signInRequest = BeginSignInRequest.builder()
         .setGoogleIdTokenRequestOptions(
             BeginSignInRequest.GoogleIdTokenRequestOptions.builder()
                 .setSupported(true)
-                .setServerClientId("329341900742-jk7qomodt7h66h7s9ishi0t89p7ksld8.apps.googleusercontent.com")
+                .setServerClientId("752190148410-0k1t2seckuv01u47sdefhp69ot843g4m.apps.googleusercontent.com")
                 .setFilterByAuthorizedAccounts(false)
                 .build()
         )
@@ -65,18 +68,45 @@ fun LoginScreen(navController: NavHostController) {
             if (idToken != null) {
                 val firebaseCredential = GoogleAuthProvider.getCredential(idToken, null)
                 auth.signInWithCredential(firebaseCredential)
-                    .addOnSuccessListener {
+                    .addOnSuccessListener { authResult ->
                         Log.d(TAG, "signInWithCredential:success")
-                        navController.navigate("") // để route đến màn hình trước đó
+                        val userId = authResult.user?.uid
+                        if (userId != null) {
+                            // Kiểm tra vai trò người dùng
+                            firestore.collection("users").document(userId).get()
+                                .addOnSuccessListener { document ->
+                                    val role = document.getString("role") ?: "user"
+                                    // Lưu thông tin nếu người dùng chưa có trong Firestore
+                                    if (!document.exists()) {
+                                        val userData = hashMapOf(
+                                            "email" to auth.currentUser?.email,
+                                            "role" to "user"
+                                        )
+                                        firestore.collection("users").document(userId).set(userData)
+                                    }
+                                    // Điều hướng dựa trên vai trò
+                                    val destination = if (role == "admin") "admin_screen" else "user_screen"
+                                    navController.navigate(destination) {
+                                        popUpTo("login_screen") { inclusive = true }
+                                    }
+                                }
+                                .addOnFailureListener { e ->
+                                    Log.w(TAG, "Failed to fetch user role", e)
+                                    errorMessage = "Lỗi kiểm tra vai trò: ${e.message}"
+                                }
+                        }
                     }
                     .addOnFailureListener { e ->
                         Log.w(TAG, "signInWithCredential:failure", e)
+                        errorMessage = "Đăng nhập Google thất bại: ${e.message}"
                     }
             } else {
                 Log.w(TAG, "No ID token!")
+                errorMessage = "Không tìm thấy token Google"
             }
-        } catch (e: Exception) { // Xử lý mọi ngoại lệ
+        } catch (e: Exception) {
             Log.w(TAG, "Sign in with Google failed", e)
+            errorMessage = "Lỗi: ${e.message}"
         }
     }
 
@@ -88,22 +118,17 @@ fun LoginScreen(navController: NavHostController) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        // Title: "Quản lý nhà hàng Booking"
-
-
         Text(
             text = "Quản lý nhà hàng\nBooking",
             style = TextStyle(
                 fontSize = 32.sp,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center
-            ),
-
+            )
         )
 
         Spacer(modifier = Modifier.height(32.dp))
 
-        // Subtitle: "Đăng nhập"
         Text(
             text = "Đăng nhập",
             style = TextStyle(
@@ -114,7 +139,6 @@ fun LoginScreen(navController: NavHostController) {
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Description: "Nhập tài khoản gmail để đăng nhập"
         Text(
             text = "Nhập tài khoản gmail để đăng nhập",
             style = TextStyle(
@@ -125,7 +149,14 @@ fun LoginScreen(navController: NavHostController) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Email input field
+        if (errorMessage.isNotEmpty()) {
+            Text(
+                text = errorMessage,
+                color = Color.Red,
+                fontSize = 14.sp,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+        }
 
         OutlinedTextField(
             value = email,
@@ -136,17 +167,20 @@ fun LoginScreen(navController: NavHostController) {
                 .padding(horizontal = 16.dp),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
             singleLine = true,
-            shape = RoundedCornerShape(8.dp)
+            shape = RoundedCornerShape(8.dp),
+            isError = errorMessage.isNotEmpty()
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // "Tiếp tục" button
         Button(
-            onClick = {if (email.isNotEmpty()) {
-                navController.navigate("password_screen/$email")
-            }
-
+            onClick = {
+                if (email.isNotEmpty() && android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+                    navController.navigate("password_screen/$email")
+                    errorMessage = ""
+                } else {
+                    errorMessage = "Vui lòng nhập email hợp lệ"
+                }
             },
             modifier = Modifier
                 .fillMaxWidth()
@@ -168,7 +202,6 @@ fun LoginScreen(navController: NavHostController) {
         }
 
         Spacer(modifier = Modifier.height(26.dp))
-
 
         Row(
             modifier = Modifier
@@ -199,20 +232,23 @@ fun LoginScreen(navController: NavHostController) {
 
         Spacer(modifier = Modifier.height(26.dp))
 
-
         OutlinedButton(
-            onClick = { signInClient.beginSignIn(signInRequest)
-                .addOnSuccessListener { result ->
-                    Log.d(TAG, "Begin sign in successful")
-                    try {
-                        launcher.launch(IntentSenderRequest.Builder(result.pendingIntent.intentSender).build())
-                    } catch (e: Exception) {
-                        Log.w(TAG, "Couldn't start Sign In: ${e.localizedMessage}", e)
+            onClick = {
+                signInClient.beginSignIn(signInRequest)
+                    .addOnSuccessListener { result ->
+                        Log.d(TAG, "Begin sign in successful")
+                        try {
+                            launcher.launch(IntentSenderRequest.Builder(result.pendingIntent.intentSender).build())
+                        } catch (e: Exception) {
+                            Log.w(TAG, "Couldn't start Sign In: ${e.localizedMessage}", e)
+                            errorMessage = "Lỗi khởi động đăng nhập Google"
+                        }
                     }
-                }
-                .addOnFailureListener { e ->
-                    Log.w(TAG, "Begin sign in failed", e)
-                } },
+                    .addOnFailureListener { e ->
+                        Log.w(TAG, "Begin sign in failed", e)
+                        errorMessage = "Đăng nhập Google thất bại: ${e.message}"
+                    }
+            },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(48.dp)
@@ -223,7 +259,6 @@ fun LoginScreen(navController: NavHostController) {
             Row(
                 verticalAlignment = Alignment.CenterVertically
             ) {
-
                 Icon(
                     painter = painterResource(id = R.drawable.ic_gg),
                     contentDescription = "Google Icon",
@@ -231,7 +266,6 @@ fun LoginScreen(navController: NavHostController) {
                         .size(28.dp)
                         .padding(end = 8.dp),
                     tint = Color.Unspecified
-
                 )
                 Text(
                     text = "Tiếp tục với Google",
@@ -245,7 +279,6 @@ fun LoginScreen(navController: NavHostController) {
         }
 
         Spacer(modifier = Modifier.height(16.dp))
-
 
         Text(
             text = "Bấm tiếp tục khi bạn đồng ý với Điều khoản dịch vụ và Chính sách bảo mật của chúng tôi",

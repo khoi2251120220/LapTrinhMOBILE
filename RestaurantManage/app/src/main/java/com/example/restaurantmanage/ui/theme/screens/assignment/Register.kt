@@ -23,16 +23,19 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 
-// code xu ly dang ky
 @Composable
 fun RegisterScreen(navController: NavHostController) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
-    var verificationCode by remember { mutableStateOf("") }
+    var errorMessage by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
     var confirmPasswordVisible by remember { mutableStateOf(false) }
+    val auth = FirebaseAuth.getInstance()
+    val firestore = FirebaseFirestore.getInstance()
 
     Column(
         modifier = Modifier
@@ -73,13 +76,23 @@ fun RegisterScreen(navController: NavHostController) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        if (errorMessage.isNotEmpty()) {
+            Text(
+                text = errorMessage,
+                color = Color.Red,
+                fontSize = 14.sp,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+        }
+
         OutlinedTextField(
             value = email,
             onValueChange = { email = it },
-            placeholder = { Text("Nhập tài tài khoản gmail") },
+            placeholder = { Text("Nhập tài khoản gmail") },
             modifier = Modifier.fillMaxWidth(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-            shape = RoundedCornerShape(8.dp)
+            shape = RoundedCornerShape(8.dp),
+            isError = errorMessage.isNotEmpty()
         )
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -99,7 +112,8 @@ fun RegisterScreen(navController: NavHostController) {
                         contentDescription = if (passwordVisible) "Hide password" else "Show password"
                     )
                 }
-            }
+            },
+            isError = errorMessage.isNotEmpty()
         )
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -119,34 +133,57 @@ fun RegisterScreen(navController: NavHostController) {
                         contentDescription = if (confirmPasswordVisible) "Hide password" else "Show password"
                     )
                 }
-            }
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        OutlinedTextField(
-            value = verificationCode,
-            onValueChange = { verificationCode = it },
-            placeholder = { Text("Nhập mã xác nhận") },
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(8.dp)
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Text(
-            text = "Mã được gửi qua gmail...",
-            style = TextStyle(
-                fontSize = 14.sp,
-                color = Color.Gray
-            ),
-            modifier = Modifier.align(Alignment.Start)
+            },
+            isError = errorMessage.isNotEmpty()
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
         Button(
-            onClick = { /* Handle registration */ },
+            onClick = {
+                errorMessage = ""
+                when {
+                    email.isEmpty() || !android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches() -> {
+                        errorMessage = "Vui lòng nhập email hợp lệ"
+                    }
+                    password.isEmpty() || password.length < 6 -> {
+                        errorMessage = "Mật khẩu phải có ít nhất 6 ký tự"
+                    }
+                    password != confirmPassword -> {
+                        errorMessage = "Mật khẩu xác nhận không khớp"
+                    }
+                    else -> {
+                        auth.createUserWithEmailAndPassword(email, password)
+                            .addOnSuccessListener { authResult ->
+                                val userId = authResult.user?.uid
+                                if (userId != null) {
+                                    val userData = hashMapOf(
+                                        "email" to email,
+                                        "role" to "user"
+                                    )
+                                    firestore.collection("users").document(userId)
+                                        .set(userData)
+                                        .addOnSuccessListener {
+                                            auth.currentUser?.sendEmailVerification()
+                                            errorMessage = "Vui lòng kiểm tra email để xác nhận tài khoản"
+                                            navController.navigate("login_screen") {
+                                                popUpTo("register_screen") { inclusive = true }
+                                            }
+                                        }
+                                        .addOnFailureListener { e ->
+                                            errorMessage = "Lỗi lưu thông tin người dùng: ${e.message}"
+                                        }
+                                }
+                            }
+                            .addOnFailureListener { e ->
+                                errorMessage = when {
+                                    e.message?.contains("email address is already in use") == true -> "Email đã được sử dụng"
+                                    else -> "Đăng ký thất bại: ${e.message}"
+                                }
+                            }
+                    }
+                }
+            },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(48.dp),

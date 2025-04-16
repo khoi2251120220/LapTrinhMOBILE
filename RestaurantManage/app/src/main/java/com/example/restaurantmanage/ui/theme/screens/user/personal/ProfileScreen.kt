@@ -21,57 +21,21 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
+import com.example.restaurantmanage.viewmodels.ProfileViewModel
 
-// Data class để lưu thông tin khách hàng
-data class UserProfile(
-    val name: String = "T4 dpcfso",
-    val email: String = "jul.msnr.nb@gmail.com",
-    val phone: String = "012416799",
-    val address: String = "192 Street Norms, Aqn.1, Flat 2",
-    val favoriteItems: List<String> = listOf("Món yêu thích 1", "Món yêu thích 2")
-)
-
-// ViewModel để quản lý dữ liệu
-class ProfileViewModel : ViewModel() {
-    private val _userProfile = MutableStateFlow(UserProfile())
-    val userProfile: StateFlow<UserProfile> = _userProfile
-
-    private val _isSaved = MutableStateFlow(false)
-    val isSaved: StateFlow<Boolean> = _isSaved
-
-    fun updateProfile(
-        name: String = _userProfile.value.name,
-        email: String = _userProfile.value.email,
-        phone: String = _userProfile.value.phone,
-        address: String = _userProfile.value.address,
-        favoriteItems: List<String> = _userProfile.value.favoriteItems
-    ) {
-        _userProfile.value = UserProfile(name, email, phone, address, favoriteItems)
-        _isSaved.value = false
-    }
-
-    fun saveProfile() {
-        _isSaved.value = true
-        println("Đã lưu thông tin: ${_userProfile.value}")
-    }
-
-    fun resetSaveStatus() {
-        _isSaved.value = false
-    }
-}
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
-    navcontroller : NavController,
+    navController: NavController,
     viewModel: ProfileViewModel = viewModel()
 ) {
     val userProfile by viewModel.userProfile.collectAsState()
     val isSaved by viewModel.isSaved.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+    val errorMessage by viewModel.errorMessage.collectAsState()
+    val context = LocalContext.current
 
     var name by remember { mutableStateOf(userProfile.name) }
     var email by remember { mutableStateOf(userProfile.email) }
@@ -80,12 +44,30 @@ fun ProfileScreen(
     val favoriteItems = remember { mutableStateListOf<String>().apply { addAll(userProfile.favoriteItems) } }
     var newFavoriteItem by remember { mutableStateOf("") }
 
+    // Cập nhật UI khi userProfile thay đổi
+    LaunchedEffect(userProfile) {
+        name = userProfile.name
+        email = userProfile.email
+        phone = userProfile.phone
+        address = userProfile.address
+        favoriteItems.clear()
+        favoriteItems.addAll(userProfile.favoriteItems)
+    }
+
+    // Reset trạng thái lưu sau 2 giây
+    if (isSaved) {
+        LaunchedEffect(Unit) {
+            kotlinx.coroutines.delay(2000)
+            viewModel.resetSaveStatus()
+        }
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(bottom = 80.dp) // Để chỗ cho nút Lưu
+                .padding(bottom = 80.dp)
                 .safeDrawingPadding()
                 .padding(16.dp)
         ) {
@@ -102,7 +84,15 @@ fun ProfileScreen(
                 )
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.clickable { /* Xử lý đăng xuất */ }
+                    modifier = Modifier.clickable {
+                        if (!isLoading) {
+                            viewModel.signOut(context) {
+                                navController.navigate("login_screen") {
+                                    popUpTo(navController.graph.startDestinationId) { inclusive = true }
+                                }
+                            }
+                        }
+                    }
                 ) {
                     Icon(
                         imageVector = Icons.Default.PowerSettingsNew,
@@ -119,6 +109,31 @@ fun ProfileScreen(
             }
 
             Spacer(modifier = Modifier.height(24.dp))
+
+            // Hiển thị vai trò người dùng
+            Text(
+                text = "Vai trò: ${userProfile.role}",
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Medium,
+                color = if (userProfile.role == "admin") Color.Blue else Color.Black
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Hiển thị lỗi nếu có
+            if (errorMessage.isNotEmpty()) {
+                Text(
+                    text = errorMessage,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
+                Button(
+                    onClick = { viewModel.clearError() },
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                ) {
+                    Text("Xóa thông báo lỗi")
+                }
+            }
 
             // User Profile Section
             Card(
@@ -145,7 +160,8 @@ fun ProfileScreen(
                             value = name,
                             onValueChange = { name = it; viewModel.updateProfile(name = it) },
                             label = { Text("Tên") },
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f),
+                            enabled = !isLoading
                         )
                     }
 
@@ -161,10 +177,11 @@ fun ProfileScreen(
                         Spacer(modifier = Modifier.width(16.dp))
                         OutlinedTextField(
                             value = email,
-                            onValueChange = { email = it; viewModel.updateProfile(email = it) },
+                            onValueChange = { /* Email không cho chỉnh sửa */ },
                             label = { Text("Email") },
                             modifier = Modifier.fillMaxWidth(),
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                            enabled = false
                         )
                     }
 
@@ -183,7 +200,8 @@ fun ProfileScreen(
                             onValueChange = { phone = it; viewModel.updateProfile(phone = it) },
                             label = { Text("Số điện thoại") },
                             modifier = Modifier.fillMaxWidth(),
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone)
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                            enabled = !isLoading
                         )
                     }
 
@@ -201,7 +219,8 @@ fun ProfileScreen(
                             value = address,
                             onValueChange = { address = it; viewModel.updateProfile(address = it) },
                             label = { Text("Địa chỉ") },
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier.fillMaxWidth(),
+                            enabled = !isLoading
                         )
                     }
                 }
@@ -237,7 +256,8 @@ fun ProfileScreen(
                             value = newFavoriteItem,
                             onValueChange = { newFavoriteItem = it },
                             label = { Text("Thêm món yêu thích") },
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f),
+                            enabled = !isLoading
                         )
                         IconButton(
                             onClick = {
@@ -246,7 +266,8 @@ fun ProfileScreen(
                                     viewModel.updateProfile(favoriteItems = favoriteItems.toList())
                                     newFavoriteItem = ""
                                 }
-                            }
+                            },
+                            enabled = !isLoading
                         ) {
                             Icon(Icons.Default.Add, contentDescription = "Thêm")
                         }
@@ -281,7 +302,8 @@ fun ProfileScreen(
                                         onClick = {
                                             favoriteItems.remove(item)
                                             viewModel.updateProfile(favoriteItems = favoriteItems.toList())
-                                        }
+                                        },
+                                        enabled = !isLoading
                                     ) {
                                         Icon(
                                             Icons.Default.Delete,
@@ -296,7 +318,7 @@ fun ProfileScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
             // Order History Section
             Card(
@@ -331,7 +353,7 @@ fun ProfileScreen(
 
         // Save Button - Cố định ở dưới màn hình
         Button(
-            onClick = { viewModel.saveProfile() },
+            onClick = { if (!isLoading) viewModel.saveProfile() },
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
@@ -339,19 +361,20 @@ fun ProfileScreen(
                 .height(50.dp),
             colors = ButtonDefaults.buttonColors(
                 containerColor = if (isSaved) Color.Green else MaterialTheme.colorScheme.primary
-            )
+            ),
+            enabled = !isLoading
         ) {
-            Text(
-                text = if (isSaved) "ĐÃ LƯU" else "LƯU THÔNG TIN",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold
-            )
-        }
-
-        if (isSaved) {
-            LaunchedEffect(Unit) {
-                kotlinx.coroutines.delay(2000)
-                viewModel.resetSaveStatus()
+            if (isLoading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(24.dp),
+                    color = Color.White
+                )
+            } else {
+                Text(
+                    text = if (isSaved) "ĐÃ LƯU" else "LƯU THÔNG TIN",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold
+                )
             }
         }
     }
@@ -361,19 +384,18 @@ fun ProfileScreen(
 @Composable
 fun ProfileScreenPreview() {
     MaterialTheme {
-        // Tạo ViewModel giả cho preview
         val mockViewModel = ProfileViewModel().apply {
             updateProfile(
                 name = "T4 dpcfso",
                 email = "jul.msnr.nb@gmail.com",
                 phone = "012416799",
                 address = "192 Street Norms, Aqn.1, Flat 2",
-                favoriteItems = listOf("Món yêu thích 1", "Món yêu thích 2")
+                favoriteItems = listOf("Món yêu thích 1", "Món yêu thích 2"),
+                role = "user"
             )
         }
-
         ProfileScreen(
-            navcontroller = NavController(LocalContext.current),
+            navController = NavController(LocalContext.current),
             viewModel = mockViewModel
         )
     }
