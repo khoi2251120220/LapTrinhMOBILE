@@ -29,7 +29,7 @@ fun MenuItemView(menuItem: MenuItem, navController: NavController) {
             .padding(8.dp)
             .clickable {
                 // Navigate to detail screen
-                navController.navigate("detail/${menuItem.id}")//set up navigation
+                navController.navigate("detail/${menuItem.id}")
             }
     ) {
         Image(
@@ -44,7 +44,7 @@ fun MenuItemView(menuItem: MenuItem, navController: NavController) {
             fontSize = 16.sp
         )
         if (menuItem.orderCount > 0) {
-            Text(text = "${menuItem.price * (1 - 0.25)} VND", color = Color.Red, fontSize = 16.sp) // Example discount
+            Text(text = "${menuItem.price * 0.75} VND", color = Color.Red, fontSize = 16.sp) // Example discount
         }
     }
 }
@@ -84,10 +84,10 @@ fun MenuScreen(navController: NavController, categories: List<MenuCategory>) {
 
 @Preview(showBackground = true)
 @Composable
-fun MenuReview() {
+fun MenuScreenPreview() {
     val sampleItems = listOf(
-        MenuItem(id = "1", name = "Tôm sốt cà chua", price = 60000.0, orderCount = 0, image = "", categoryId = 1),
-        MenuItem(id = "2", name = "Nước ép trái cây", price = 40000.0, orderCount = 5, image = "", categoryId = 2)
+        MenuItem(id = "1", name = "Tôm sốt cà chua", price = 60000.0, orderCount = 0, image = "https://example.com/image1.jpg", categoryId = 1),
+        MenuItem(id = "2", name = "Nước ép trái cây", price = 40000.0, orderCount = 5, image = "https://example.com/image2.jpg", categoryId = 2)
     )
 
     val sampleCategories = listOf(

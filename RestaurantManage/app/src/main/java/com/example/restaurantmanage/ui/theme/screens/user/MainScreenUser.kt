@@ -6,6 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -18,14 +19,17 @@ import com.example.restaurantmanage.ui.theme.screens.assignment.PasswordScreen
 import com.example.restaurantmanage.ui.theme.screens.user.booking.BookingScreen
 import com.example.restaurantmanage.ui.theme.screens.user.home.HomeScreen
 import com.example.restaurantmanage.ui.theme.screens.user.introduce.IntroduceScreen
+import com.example.restaurantmanage.ui.theme.screens.user.order.FoodDetailScreen
 import com.example.restaurantmanage.ui.theme.screens.user.order.MenuScreen
 import com.example.restaurantmanage.ui.theme.screens.user.personal.ProfileScreen
+import com.example.restaurantmanage.viewmodels.MenuViewModel
 
 @Composable
 fun MainScreenUser() {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
+    val viewModel: MenuViewModel = viewModel()
 
     Scaffold(
         bottomBar = {
@@ -60,6 +64,10 @@ fun MainScreenUser() {
             composable("password_screen/{email}") { backStackEntry ->
                 val email = backStackEntry.arguments?.getString("email") ?: ""
                 PasswordScreen(navController = navController, email = email)
+            }
+            composable("detail/{menuItemId}") { backStackEntry ->
+                val menuItemId = backStackEntry.arguments?.getString("menuItemId") ?: ""
+                FoodDetailScreen(menuItemId, viewModel, navController)
             }
         }
     }

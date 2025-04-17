@@ -1,4 +1,4 @@
-package com.example.restaurantmanage.ui.theme.screens.user.cart
+package com.example.restaurantmanage.ui.theme.screens.user.order
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable

@@ -2,14 +2,20 @@ package com.example.restaurantmanage.viewmodels
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.restaurantmanage.data.local.dao.MenuItemDao
+import com.example.restaurantmanage.data.local.entity.MenuItemEntity
 import com.example.restaurantmanage.data.models.MenuCategory
 import com.example.restaurantmanage.data.models.MenuItem
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.launch
 
-class MenuViewModel : ViewModel() {
+class MenuViewModel(private val menuItemDao: MenuItemDao) : ViewModel() {
     private val _categories = MutableStateFlow<List<MenuCategory>>(emptyList())
     val categories: StateFlow<List<MenuCategory>> = _categories.asStateFlow()
 
@@ -145,4 +151,10 @@ class MenuViewModel : ViewModel() {
             _topSellingItems.value = updatedTopItems
         }
     }
-} 
+
+    fun getMenuItemById(id: String): Flow<MenuItemEntity?> {
+        return flow {
+            emit(menuItemDao.getMenuItemById(id))
+        }.flowOn(Dispatchers.IO)
+    }
+}
