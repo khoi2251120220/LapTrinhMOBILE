@@ -17,12 +17,13 @@ import coil.compose.rememberAsyncImagePainter
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import com.example.restaurantmanage.data.local.entity.CategoryEntity
 import com.example.restaurantmanage.ui.theme.components.AppBar
-import com.example.restaurantmanage.data.models.MenuItem
+import com.example.restaurantmanage.data.local.entity.MenuItemEntity
 import com.example.restaurantmanage.data.models.MenuCategory
 
 @Composable
-fun MenuItemView(menuItem: MenuItem, navController: NavController) {
+fun MenuItemView(menuItem: MenuItemEntity, navController: NavController) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
@@ -50,14 +51,14 @@ fun MenuItemView(menuItem: MenuItem, navController: NavController) {
 }
 
 @Composable
-fun MenuScreen(navController: NavController, categories: List<MenuCategory>) {
+fun MenuScreen(navController: NavController, categories: List<CategoryEntity>) {
     var selectedCategory by remember { mutableStateOf(categories.first()) }
 
     Column(modifier = Modifier.padding(16.dp)) {
         AppBar("Thực đơn", navController, true)
 
         // Category selection
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Start) {
+        Row( horizontalArrangement = Arrangement.Start) {
             categories.forEach { category ->
                 Button(
                     onClick = { selectedCategory = category },
@@ -86,13 +87,13 @@ fun MenuScreen(navController: NavController, categories: List<MenuCategory>) {
 @Composable
 fun MenuScreenPreview() {
     val sampleItems = listOf(
-        MenuItem(id = "1", name = "Tôm sốt cà chua", price = 60000.0, orderCount = 0, image = "https://example.com/image1.jpg", categoryId = 1),
-        MenuItem(id = "2", name = "Nước ép trái cây", price = 40000.0, orderCount = 5, image = "https://example.com/image2.jpg", categoryId = 2)
+        MenuItemEntity(id = "1", name = "Tôm sốt cà chua", price = 60000.0, orderCount = 1, image = "https://example.com/image1.jpg", categoryId = 1, inStock = true, description = ""),
+        MenuItemEntity(id = "2", name = "Nước ép trái cây", price = 40000.0, orderCount = 5, image = "https://example.com/image2.jpg", categoryId = 2, inStock = true, description = "")
     )
 
     val sampleCategories = listOf(
-        MenuCategory(id = 1, name = "Thức ăn", items = sampleItems.filter { it.categoryId == 1 }),
-        MenuCategory(id = 2, name = "Đồ uống", items = sampleItems.filter { it.categoryId == 2 })
+        CategoryEntity(id = 1, name = "Thức ăn", items = sampleItems.filter { it.categoryId == 1 }),
+        CategoryEntity(id = 2, name = "Đồ uống", items = sampleItems.filter { it.categoryId == 2 })
     )
 
     MenuScreen(navController = rememberNavController(), categories = sampleCategories)

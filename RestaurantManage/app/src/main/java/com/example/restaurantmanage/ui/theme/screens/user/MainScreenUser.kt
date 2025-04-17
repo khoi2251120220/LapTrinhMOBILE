@@ -11,6 +11,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.example.restaurantmanage.data.local.dao.MenuItemDao
+import com.example.restaurantmanage.data.local.entity.categories
 import com.example.restaurantmanage.data.models.*
 import com.example.restaurantmanage.ui.theme.RestaurantManageTheme
 import com.example.restaurantmanage.ui.theme.components.BottomNavBar
@@ -23,13 +25,14 @@ import com.example.restaurantmanage.ui.theme.screens.user.order.FoodDetailScreen
 import com.example.restaurantmanage.ui.theme.screens.user.order.MenuScreen
 import com.example.restaurantmanage.ui.theme.screens.user.personal.ProfileScreen
 import com.example.restaurantmanage.viewmodels.MenuViewModel
+import com.example.restaurantmanage.viewmodels.MenuViewModelFactory
 
 @Composable
-fun MainScreenUser() {
+fun MainScreenUser(menuItemDao: MenuItemDao) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
-//    val viewModel: MenuViewModel = viewModel()
+    val viewModel: MenuViewModel = viewModel(factory = MenuViewModelFactory(menuItemDao))
 
     Scaffold(
         bottomBar = {
@@ -53,7 +56,7 @@ fun MainScreenUser() {
                 BookingScreen(navController)
             }
             composable("menu") {
-                MenuScreen(navController, sampleCategories)
+                MenuScreen(navController, categories = categories)
             }
             composable("profile") {
                 ProfileScreen(navController)
@@ -65,18 +68,11 @@ fun MainScreenUser() {
                 val email = backStackEntry.arguments?.getString("email") ?: ""
                 PasswordScreen(navController = navController, email = email)
             }
-//            composable("detail/{menuItemId}") { backStackEntry ->
-//                val menuItemId = backStackEntry.arguments?.getString("menuItemId") ?: ""
-//                FoodDetailScreen(menuItemId, viewModel, navController)
-//            }
+            composable("detail/{menuItemId}") { backStackEntry ->
+                val menuItemId = backStackEntry.arguments?.getString("menuItemId") ?: ""
+                FoodDetailScreen(menuItemId, viewModel, navController)
+            }
         }
     }
 }
 
-@Preview(showBackground = true)
-@Composable
-fun MainScreenPreview() {
-    RestaurantManageTheme {
-        MainScreenUser()
-    }
-}
