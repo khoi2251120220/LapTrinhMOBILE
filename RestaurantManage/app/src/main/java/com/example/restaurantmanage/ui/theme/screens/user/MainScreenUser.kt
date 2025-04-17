@@ -29,7 +29,7 @@ fun MainScreenUser() {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
-    val viewModel: MenuViewModel = viewModel()
+//    val viewModel: MenuViewModel = viewModel()
 
     Scaffold(
         bottomBar = {
@@ -65,10 +65,10 @@ fun MainScreenUser() {
                 val email = backStackEntry.arguments?.getString("email") ?: ""
                 PasswordScreen(navController = navController, email = email)
             }
-            composable("detail/{menuItemId}") { backStackEntry ->
-                val menuItemId = backStackEntry.arguments?.getString("menuItemId") ?: ""
-                FoodDetailScreen(menuItemId, viewModel, navController)
-            }
+//            composable("detail/{menuItemId}") { backStackEntry ->
+//                val menuItemId = backStackEntry.arguments?.getString("menuItemId") ?: ""
+//                FoodDetailScreen(menuItemId, viewModel, navController)
+//            }
         }
     }
 }
