@@ -15,7 +15,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.launch
 
-class MenuViewModel() : ViewModel() {
+class MenuViewModel(private val menuItemDao: MenuItemDao) : ViewModel() {
     private val _categories = MutableStateFlow<List<MenuCategory>>(emptyList())
     val categories: StateFlow<List<MenuCategory>> = _categories.asStateFlow()
 
@@ -152,9 +152,9 @@ class MenuViewModel() : ViewModel() {
         }
     }
 
-//    fun getMenuItemById(id: String): Flow<MenuItemEntity?> {
-//        return flow {
-//            emit(menuItemDao.getMenuItemById(id))
-//        }.flowOn(Dispatchers.IO)
-//    }
+    fun getMenuItemById(id: String): Flow<MenuItemEntity?> {
+        return flow {
+            emit(menuItemDao.getMenuItemById(id))
+        }.flowOn(Dispatchers.IO)
+    }
 }

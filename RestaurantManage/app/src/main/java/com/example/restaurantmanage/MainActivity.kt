@@ -12,6 +12,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.example.restaurantmanage.data.local.RestaurantDatabase
 import com.example.restaurantmanage.ui.theme.screens.admin.MainScreenAdmin
 import com.example.restaurantmanage.ui.theme.screens.assignment.LoginScreen
 import com.example.restaurantmanage.ui.theme.screens.assignment.PasswordScreen
@@ -32,6 +33,8 @@ class MainActivity : ComponentActivity() {
                     val navController = rememberNavController()
                     val auth = FirebaseAuth.getInstance()
                     val firestore = FirebaseFirestore.getInstance()
+                    val database = RestaurantDatabase.getDatabase(this)
+                    val menuItemDao = database.menuItemDao()
 
                     val startDestination = if (auth.currentUser != null) {
                         var destination = "user_screen"
@@ -65,7 +68,7 @@ class MainActivity : ComponentActivity() {
                             RegisterScreen(navController)
                         }
                         composable("user_screen") {
-                            MainScreenUser()
+                            MainScreenUser(menuItemDao)
                         }
                         composable("admin_screen") {
                             MainScreenAdmin()
