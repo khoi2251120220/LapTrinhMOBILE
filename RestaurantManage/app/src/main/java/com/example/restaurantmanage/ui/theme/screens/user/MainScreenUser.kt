@@ -5,16 +5,13 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.example.restaurantmanage.data.local.dao.MenuItemDao
-import com.example.restaurantmanage.data.local.entity.categories
-import com.example.restaurantmanage.data.models.*
-import com.example.restaurantmanage.ui.theme.RestaurantManageTheme
+import com.example.restaurantmanage.data.local.RestaurantDatabase
 import com.example.restaurantmanage.ui.theme.components.BottomNavBar
 import com.example.restaurantmanage.ui.theme.screens.assignment.LoginScreen
 import com.example.restaurantmanage.ui.theme.screens.assignment.PasswordScreen
@@ -26,13 +23,23 @@ import com.example.restaurantmanage.ui.theme.screens.user.order.MenuScreen
 import com.example.restaurantmanage.ui.theme.screens.user.personal.ProfileScreen
 import com.example.restaurantmanage.viewmodels.MenuViewModel
 import com.example.restaurantmanage.viewmodels.MenuViewModelFactory
+import com.example.restaurantmanage.viewmodels.HomeViewModelFactory
 
 @Composable
-fun MainScreenUser(menuItemDao: MenuItemDao) {
+fun MainScreenUser() {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
-    val viewModel: MenuViewModel = viewModel(factory = MenuViewModelFactory(menuItemDao))
+    val context = LocalContext.current
+    val database = RestaurantDatabase.getDatabase(context)
+    
+    // Khởi tạo ViewModel với đầy đủ dependencies
+    val menuViewModel: MenuViewModel = viewModel(
+        factory = MenuViewModelFactory(
+            menuItemDao = database.menuItemDao(),
+            categoryDao = database.categoryDao()
+        )
+    )
 
     Scaffold(
         bottomBar = {
@@ -50,19 +57,27 @@ fun MainScreenUser(menuItemDao: MenuItemDao) {
                 IntroduceScreen(navController)
             }
             composable("home") {
-                HomeScreen(navController)
+                HomeScreen(
+                    navController = navController,
+                    homeViewModel = viewModel(
+                        factory = HomeViewModelFactory(database)
+                    )
+                )
             }
             composable("booking") {
                 BookingScreen(navController)
             }
             composable("menu") {
-                MenuScreen(navController, categories = categories)
+                MenuScreen(
+                    navController = navController,
+                    viewModel = menuViewModel
+                )
             }
             composable("profile") {
                 ProfileScreen(navController)
             }
             composable("login_screen") {
-                LoginScreen( navController)
+                LoginScreen(navController)
             }
             composable("password_screen/{email}") { backStackEntry ->
                 val email = backStackEntry.arguments?.getString("email") ?: ""
@@ -70,7 +85,7 @@ fun MainScreenUser(menuItemDao: MenuItemDao) {
             }
             composable("detail/{menuItemId}") { backStackEntry ->
                 val menuItemId = backStackEntry.arguments?.getString("menuItemId") ?: ""
-                FoodDetailScreen(menuItemId, viewModel, navController)
+                FoodDetailScreen(menuItemId, menuViewModel, navController)
             }
         }
     }

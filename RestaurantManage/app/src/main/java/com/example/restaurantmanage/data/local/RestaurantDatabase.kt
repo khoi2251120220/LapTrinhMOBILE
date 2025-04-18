@@ -8,9 +8,13 @@ import androidx.room.TypeConverters
 import com.example.restaurantmanage.data.local.converter.Converters
 import com.example.restaurantmanage.data.local.dao.*
 import com.example.restaurantmanage.data.local.entity.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 @Database(
     entities = [
+//        UserEntity::class,
         CategoryEntity::class,
         MenuItemEntity::class,
         TableEntity::class,
@@ -25,6 +29,7 @@ import com.example.restaurantmanage.data.local.entity.*
 )
 @TypeConverters(Converters::class)
 abstract class RestaurantDatabase : RoomDatabase() {
+//    abstract fun userDao(): UserDao
     abstract fun categoryDao(): CategoryDao
     abstract fun menuItemDao(): MenuItemDao
     abstract fun tableDao(): TableDao
@@ -46,9 +51,18 @@ abstract class RestaurantDatabase : RoomDatabase() {
                     "restaurant_database"
                 )
                 .fallbackToDestructiveMigration()
-                .allowMainThreadQueries()
                 .build()
+
                 INSTANCE = instance
+
+                // Khởi tạo dữ liệu mẫu
+                CoroutineScope(Dispatchers.IO).launch {
+                    DatabaseInitializer.initializeData(
+                        instance.categoryDao(),
+                        instance.menuItemDao()
+                    )
+                }
+
                 instance
             }
         }

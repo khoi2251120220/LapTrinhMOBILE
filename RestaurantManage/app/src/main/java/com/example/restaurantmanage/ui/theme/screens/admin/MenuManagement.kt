@@ -10,12 +10,15 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -24,19 +27,26 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.example.restaurantmanage.data.local.RestaurantDatabase
 import com.example.restaurantmanage.data.models.MenuItem
 import com.example.restaurantmanage.ui.theme.components.AdminAppBar
 import com.example.restaurantmanage.ui.theme.components.NavAdmin
 import com.example.restaurantmanage.ui.theme.RestaurantManageTheme
 import com.example.restaurantmanage.ui.theme.PrimaryColor
 import com.example.restaurantmanage.viewmodels.MenuViewModel
+import com.example.restaurantmanage.viewmodels.MenuViewModelFactory
 import java.text.NumberFormat
 import java.util.Locale
 
 @Composable
 fun MenuManagementScreen(
     navController: NavController,
-    viewModel: MenuViewModel = viewModel()
+    viewModel: MenuViewModel = viewModel(
+        factory = MenuViewModelFactory(
+            menuItemDao = RestaurantDatabase.getDatabase(LocalContext.current).menuItemDao(),
+            categoryDao = RestaurantDatabase.getDatabase(LocalContext.current).categoryDao()
+        )
+    )
 ) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
@@ -56,7 +66,8 @@ fun MenuManagementScreen(
             onSave = { name, price, category ->
                 viewModel.addMenuItem(name, price, category)
                 showAddDialog = false
-            }
+            },
+            viewModel = viewModel
         )
     }
     
@@ -65,11 +76,12 @@ fun MenuManagementScreen(
             isEdit = true,
             item = selectedItem,
             onDismiss = { showEditDialog = false },
-            onSave = { name, price, category ->
+            onSave = { name, price, _ ->
                 viewModel.updateMenuItem(selectedItem!!.id, name, price)
                 showEditDialog = false
                 selectedItem = null
-            }
+            },
+            viewModel = viewModel
         )
     }
     
@@ -329,13 +341,17 @@ fun MenuItemDialog(
     isEdit: Boolean,
     item: MenuItem?,
     onDismiss: () -> Unit,
-    onSave: (name: String, price: Double, category: String) -> Unit
+    onSave: (name: String, price: Double, category: String) -> Unit,
+    viewModel: MenuViewModel
 ) {
     var itemName by remember { mutableStateOf(item?.name ?: "") }
     var itemPrice by remember { mutableStateOf(item?.price?.toString() ?: "") }
-    var itemCategory by remember { mutableStateOf(item?.categoryId?.toString() ?: "") }
+    var selectedCategoryId by remember { mutableStateOf(item?.categoryId?.toString() ?: "") }
     var hasError by remember { mutableStateOf(false) }
+    var expanded by remember { mutableStateOf(false) }
     
+    val categories by viewModel.categories.collectAsState()
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(text = if (isEdit) "Chỉnh sửa món" else "Thêm món mới") },
@@ -368,14 +384,45 @@ fun MenuItemDialog(
                 if (!isEdit) {
                     Spacer(modifier = Modifier.height(8.dp))
                     
-                    OutlinedTextField(
-                        value = itemCategory,
-                        onValueChange = { itemCategory = it },
-                        label = { Text("Danh mục") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        isError = hasError && itemCategory.isEmpty()
-                    )
+                    Box(
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        OutlinedTextField(
+                            value = categories.find { it.id.toString() == selectedCategoryId }?.name ?: "",
+                            onValueChange = {},
+                            readOnly = true,
+                            label = { Text("Danh mục") },
+                            modifier = Modifier.fillMaxWidth(),
+                            trailingIcon = {
+                                IconButton(onClick = { expanded = !expanded }) {
+                                    Icon(
+                                        imageVector = if (expanded) 
+                                            Icons.Default.KeyboardArrowUp 
+                                        else 
+                                            Icons.Default.KeyboardArrowDown,
+                                        contentDescription = "Chọn danh mục"
+                                    )
+                                }
+                            },
+                            isError = hasError && selectedCategoryId.isEmpty()
+                        )
+
+                        DropdownMenu(
+                            expanded = expanded,
+                            onDismissRequest = { expanded = false },
+                            modifier = Modifier.width(IntrinsicSize.Min)
+                        ) {
+                            categories.forEach { category ->
+                                DropdownMenuItem(
+                                    text = { Text(category.name) },
+                                    onClick = {
+                                        selectedCategoryId = category.id.toString()
+                                        expanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
                 }
                 
                 if (hasError) {
@@ -392,13 +439,13 @@ fun MenuItemDialog(
             Button(
                 onClick = {
                     if (itemName.isNotEmpty() && itemPrice.isNotEmpty() && 
-                        (isEdit || itemCategory.isNotEmpty()) && 
+                        (isEdit || selectedCategoryId.isNotEmpty()) && 
                         itemPrice.toDoubleOrNull() != null
                     ) {
                         onSave(
                             itemName,
                             itemPrice.toDoubleOrNull() ?: 0.0,
-                            if (isEdit) item?.categoryId?.toString() ?: "" else itemCategory
+                            if (isEdit) item?.categoryId?.toString() ?: "" else selectedCategoryId
                         )
                     } else {
                         hasError = true

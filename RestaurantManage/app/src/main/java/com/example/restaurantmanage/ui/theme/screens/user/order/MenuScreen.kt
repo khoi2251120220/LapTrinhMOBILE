@@ -1,100 +1,240 @@
 package com.example.restaurantmanage.ui.theme.screens.user.order
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.rememberAsyncImagePainter
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
-import com.example.restaurantmanage.data.local.entity.CategoryEntity
 import com.example.restaurantmanage.ui.theme.components.AppBar
 import com.example.restaurantmanage.data.local.entity.MenuItemEntity
+import com.example.restaurantmanage.data.local.entity.CategoryEntity
 import com.example.restaurantmanage.data.models.MenuCategory
+import com.example.restaurantmanage.viewmodels.MenuViewModel
+import com.example.restaurantmanage.viewmodels.MenuViewModelFactory
+import com.example.restaurantmanage.data.local.RestaurantDatabase
+import androidx.lifecycle.viewmodel.compose.viewModel
+import java.text.NumberFormat
+import java.util.Locale
 
 @Composable
 fun MenuItemView(menuItem: MenuItemEntity, navController: NavController) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
+    Card(
         modifier = Modifier
-            .padding(8.dp)
+            .fillMaxWidth()
+            .padding(4.dp)
             .clickable {
-                // Navigate to detail screen
                 navController.navigate("detail/${menuItem.id}")
-            }
+            },
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(4.dp)
     ) {
-        Image(
-            painter = rememberAsyncImagePainter(menuItem.image),
-            contentDescription = null,
-            modifier = Modifier.size(100.dp)
-        )
-        Text(text = menuItem.name, fontSize = 18.sp)
-        Text(
-            text = "${menuItem.price} VND",
-            textDecoration = if (menuItem.orderCount > 0) TextDecoration.LineThrough else null,
-            fontSize = 16.sp
-        )
-        if (menuItem.orderCount > 0) {
-            Text(text = "${menuItem.price * 0.75} VND", color = Color.Red, fontSize = 16.sp) // Example discount
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(8.dp)
+        ) {
+            // Hình ảnh món ăn
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(120.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+            ) {
+                Image(
+                    painter = rememberAsyncImagePainter(
+                        model = menuItem.image.ifEmpty { "https://via.placeholder.com/200" }
+                    ),
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Tên món
+            Text(
+                text = menuItem.name,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            // Mô tả
+            Text(
+                text = menuItem.description.ifEmpty { "Món ăn đặc trưng" },
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Giá
+            if (menuItem.orderCount > 0) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = formatPrice(menuItem.price),
+                        fontSize = 12.sp,
+                        textDecoration = TextDecoration.LineThrough,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = formatPrice(menuItem.price * 0.75),
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            } else {
+                Text(
+                    text = formatPrice(menuItem.price),
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
         }
     }
 }
 
 @Composable
-fun MenuScreen(navController: NavController, categories: List<CategoryEntity>) {
-    var selectedCategory by remember { mutableStateOf(categories.first()) }
+fun MenuScreen(
+    navController: NavController,
+    viewModel: MenuViewModel = viewModel(
+        factory = MenuViewModelFactory(
+            menuItemDao = RestaurantDatabase.getDatabase(LocalContext.current).menuItemDao(),
+            categoryDao = RestaurantDatabase.getDatabase(LocalContext.current).categoryDao()
+        )
+    )
+) {
+    val categories by viewModel.categories.collectAsState()
+    var selectedCategory by remember { mutableStateOf(categories.firstOrNull()) }
 
-    Column(modifier = Modifier.padding(16.dp)) {
+    LaunchedEffect(categories) {
+        if (selectedCategory == null && categories.isNotEmpty()) {
+            selectedCategory = categories.first()
+        }
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+    ) {
         AppBar("Thực đơn", navController, true)
 
-        // Category selection
-        Row( horizontalArrangement = Arrangement.Start) {
-            categories.forEach { category ->
-                Button(
-                    onClick = { selectedCategory = category },
-                    modifier = Modifier.padding(4.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (selectedCategory.id == category.id) Color.Green else Color.LightGray,
-                        contentColor = if (selectedCategory.id == category.id) Color.White else Color.Black
-                    )
-                ) {
-                    Text(category.name, fontSize = 16.sp)
+        LazyRow(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 16.dp, horizontal = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            items(categories) { category ->
+                CategoryChip(
+                    category = category.name,
+                    isSelected = selectedCategory?.id == category.id,
+                    onSelected = { selectedCategory = category }
+                )
+            }
+        }
+
+        selectedCategory?.let { category ->
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 8.dp)
+            ) {
+                items(category.items.chunked(2)) { rowItems ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        rowItems.forEach { item ->
+                            Box(modifier = Modifier.weight(1f)) {
+                                MenuItemView(item.toMenuItemEntity(), navController)
+                            }
+                        }
+                        if (rowItems.size == 1) {
+                            Box(modifier = Modifier.weight(1f))
+                        }
+                    }
+                }
+                item {
+                    Spacer(modifier = Modifier.height(80.dp))
                 }
             }
         }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        LazyColumn {
-            items(selectedCategory.items) { item ->
-                MenuItemView(item, navController)
-            }
-        }
     }
+}
+
+@Composable
+fun CategoryChip(
+    category: String,
+    isSelected: Boolean,
+    onSelected: () -> Unit
+) {
+    Surface(
+        modifier = Modifier.clickable { onSelected() },
+        shape = CircleShape,
+        color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
+        contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+    ) {
+        Text(
+            text = category,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+            style = MaterialTheme.typography.labelLarge
+        )
+    }
+}
+
+private fun formatPrice(price: Double): String {
+    return NumberFormat.getNumberInstance(Locale("vi", "VN"))
+        .format(price) + "đ"
 }
 
 @Preview(showBackground = true)
 @Composable
 fun MenuScreenPreview() {
-    val sampleItems = listOf(
-        MenuItemEntity(id = "1", name = "Tôm sốt cà chua", price = 60000.0, orderCount = 1, image = "https://example.com/image1.jpg", categoryId = 1, inStock = true, description = ""),
-        MenuItemEntity(id = "2", name = "Nước ép trái cây", price = 40000.0, orderCount = 5, image = "https://example.com/image2.jpg", categoryId = 2, inStock = true, description = "")
+    val context = LocalContext.current
+    val database = RestaurantDatabase.getDatabase(context)
+    MenuScreen(
+        navController = rememberNavController(),
+        viewModel = viewModel(
+            factory = MenuViewModelFactory(
+                menuItemDao = database.menuItemDao(),
+                categoryDao = database.categoryDao()
+            )
+        )
     )
-
-    val sampleCategories = listOf(
-        CategoryEntity(id = 1, name = "Thức ăn", items = sampleItems.filter { it.categoryId == 1 }),
-        CategoryEntity(id = 2, name = "Đồ uống", items = sampleItems.filter { it.categoryId == 2 })
-    )
-
-    MenuScreen(navController = rememberNavController(), categories = sampleCategories)
 }

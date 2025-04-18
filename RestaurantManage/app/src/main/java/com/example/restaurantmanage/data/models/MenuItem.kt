@@ -1,5 +1,7 @@
 package com.example.restaurantmanage.data.models
 
+import com.example.restaurantmanage.data.local.entity.MenuItemEntity
+
 data class MenuItem(
     val id: String,
     val name: String,
@@ -10,7 +12,20 @@ data class MenuItem(
     val image: String = "",
     val description: String = "",
     val imageResId: Int = 0
-)
+) {
+    fun toMenuItemEntity(): MenuItemEntity {
+        return MenuItemEntity(
+            id = id,
+            name = name,
+            price = price,
+            categoryId = categoryId,
+            orderCount = orderCount,
+            inStock = inStock,
+            image = image,
+            description = description
+        )
+    }
+}
 
 data class MenuCategory(
     val id: Int,

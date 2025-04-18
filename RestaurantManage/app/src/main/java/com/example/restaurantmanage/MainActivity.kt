@@ -68,7 +68,7 @@ class MainActivity : ComponentActivity() {
                             RegisterScreen(navController)
                         }
                         composable("user_screen") {
-                            MainScreenUser(menuItemDao)
+                            MainScreenUser()
                         }
                         composable("admin_screen") {
                             MainScreenAdmin()
