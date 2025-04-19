@@ -86,10 +86,13 @@ fun ProfileScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.clickable {
                         if (!isLoading) {
+                            // Đăng xuất
                             viewModel.signOut(context) {
-                                navController.navigate("login_screen") {
-                                    popUpTo(navController.graph.startDestinationId) { inclusive = true }
-                                }
+                                // Khởi động lại MainActivity bằng Intent
+                                val intent = android.content.Intent(context, com.example.restaurantmanage.MainActivity::class.java)
+                                intent.flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK or 
+                                            android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK
+                                context.startActivity(intent)
                             }
                         }
                     }

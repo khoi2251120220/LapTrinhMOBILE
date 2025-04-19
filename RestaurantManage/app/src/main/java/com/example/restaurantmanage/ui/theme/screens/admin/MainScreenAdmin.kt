@@ -24,5 +24,8 @@ fun MainScreenAdmin() {
         composable("user_management") {
             UserManagementScreen(navController)
         }
+        composable("profile_admin") {
+            ProfileAdminScreen(navController)
+        }
     }
 } 

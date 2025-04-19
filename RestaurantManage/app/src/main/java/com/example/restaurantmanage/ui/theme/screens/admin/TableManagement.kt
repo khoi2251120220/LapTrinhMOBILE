@@ -96,8 +96,7 @@ fun TableManagementScreen(navController: NavController) {
             AdminAppBar(
                 title = "QUẢN LÝ BÀN",
                 navController = navController,
-                onMenuClick = { /* Logic khi nhấn icon menu */ },
-                onAvatarClick = { /* Logic khi nhấn icon avatar */ }
+                onMenuClick = { /* Logic khi nhấn icon menu */ }
             )
         },
         floatingActionButton = {

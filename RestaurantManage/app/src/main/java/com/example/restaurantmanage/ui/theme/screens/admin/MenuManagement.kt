@@ -92,9 +92,6 @@ fun MenuManagementScreen(
                 navController = navController,
                 onMenuClick = {
                     // Logic khi nhấn icon menu
-                },
-                onAvatarClick = {
-                    // Logic khi nhấn icon avatar
                 }
             )
         },

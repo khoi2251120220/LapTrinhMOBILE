@@ -21,7 +21,8 @@ fun AdminAppBar(
     title: String,
     navController: NavController,
     onMenuClick: () -> Unit = {}, // Callback khi nhấn icon menu
-    onAvatarClick: () -> Unit = {} // Callback khi nhấn icon avatar
+    onAvatarClick: () -> Unit = { navController.navigate("profile_admin") }, // Mặc định điều hướng đến profile_admin
+    actions: @Composable (() -> Unit)? = null // Thêm tham số cho các actions tùy chỉnh
 ) {
     TopAppBar(
         title = {
@@ -45,6 +46,10 @@ fun AdminAppBar(
             }
         },
         actions = {
+            // Nếu có actions tùy chỉnh thì hiển thị
+            actions?.invoke()
+            
+            // Mặc định luôn hiển thị nút profile
             IconButton(onClick = onAvatarClick) {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_personal),

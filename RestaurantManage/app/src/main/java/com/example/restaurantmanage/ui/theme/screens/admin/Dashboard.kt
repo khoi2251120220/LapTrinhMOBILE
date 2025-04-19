@@ -47,9 +47,6 @@ fun DashboardScreen(navController: NavController) {
                 navController = navController,
                 onMenuClick = {
                     // Logic khi nhấn icon menu (có thể mở drawer)
-                },
-                onAvatarClick = {
-                    // Logic khi nhấn icon avatar (có thể mở profile)
                 }
             )
         },
