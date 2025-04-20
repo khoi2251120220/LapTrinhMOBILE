@@ -1,7 +1,9 @@
 package com.example.restaurantmanage.ui.theme.screens.admin
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -37,6 +39,13 @@ import com.example.restaurantmanage.viewmodels.MenuViewModel
 import com.example.restaurantmanage.viewmodels.MenuViewModelFactory
 import java.text.NumberFormat
 import java.util.Locale
+import androidx.compose.ui.layout.ContentScale
+import coil.compose.AsyncImage
+import java.io.File
+import com.example.restaurantmanage.ui.theme.components.ImagePicker
+import androidx.compose.ui.res.painterResource
+import com.example.restaurantmanage.util.DrawableResourceUtils
+
 
 @Composable
 fun MenuManagementScreen(
@@ -63,8 +72,8 @@ fun MenuManagementScreen(
             isEdit = false,
             item = null,
             onDismiss = { showAddDialog = false },
-            onSave = { name, price, category ->
-                viewModel.addMenuItem(name, price, category)
+            onSave = { name, price, category, imagePath, description ->
+                viewModel.addMenuItem(name, price, category, imagePath, description)
                 showAddDialog = false
             },
             viewModel = viewModel
@@ -76,8 +85,8 @@ fun MenuManagementScreen(
             isEdit = true,
             item = selectedItem,
             onDismiss = { showEditDialog = false },
-            onSave = { name, price, _ ->
-                viewModel.updateMenuItem(selectedItem!!.id, name, price)
+            onSave = { name, price, category, imagePath, description ->
+                viewModel.updateMenuItem(selectedItem!!.id, name, price, category, imagePath, description)
                 showEditDialog = false
                 selectedItem = null
             },
@@ -246,7 +255,7 @@ fun MenuItemCard(
     onEditClick: () -> Unit
 ) {
     var isOutOfStock by remember { mutableStateOf(!item.inStock) }
-    
+
     Card(
         modifier = Modifier
             .width(180.dp),
@@ -262,6 +271,47 @@ fun MenuItemCard(
                     .clip(RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp)),
                 contentAlignment = Alignment.Center
             ) {
+                // Hiển thị ảnh từ đường dẫn
+                if (item.image.isNotEmpty() && !item.image.startsWith("/")) {
+                    // Sử dụng DrawableResourceUtils thay vì getIdentifier
+                    val resourceId = DrawableResourceUtils.getDrawableResourceId(item.image)
+                    
+                    if (resourceId != null) {
+                        // Nếu là drawable resource
+                        Image(
+                            painter = painterResource(id = resourceId),
+                            contentDescription = item.name,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        // Hiển thị ảnh placeholder nếu không tìm thấy drawable
+                        AsyncImage(
+                            model = "https://via.placeholder.com/200",
+                            contentDescription = item.name,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
+                } else if (item.image.startsWith("/")) {
+                    // Nếu là đường dẫn file
+                    val file = File(item.image)
+                    AsyncImage(
+                        model = if (file.exists()) item.image else "https://via.placeholder.com/200",
+                        contentDescription = item.name,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    // Nếu không có ảnh
+                    AsyncImage(
+                        model = "https://via.placeholder.com/200",
+                        contentDescription = item.name,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                }
+                
                 if (isOutOfStock) {
                     Surface(
                         modifier = Modifier.matchParentSize(),
@@ -338,16 +388,30 @@ fun MenuItemDialog(
     isEdit: Boolean,
     item: MenuItem?,
     onDismiss: () -> Unit,
-    onSave: (name: String, price: Double, category: String) -> Unit,
+    onSave: (name: String, price: Double, category: String, imagePath: String?, description: String) -> Unit,
     viewModel: MenuViewModel
 ) {
     var itemName by remember { mutableStateOf(item?.name ?: "") }
     var itemPrice by remember { mutableStateOf(item?.price?.toString() ?: "") }
     var selectedCategoryId by remember { mutableStateOf(item?.categoryId?.toString() ?: "") }
+    var itemDescription by remember { mutableStateOf(item?.description ?: "") }
+    var imagePath by remember { mutableStateOf(item?.image ?: "") }
     var hasError by remember { mutableStateOf(false) }
     var expanded by remember { mutableStateOf(false) }
+    var showDrawableDialog by remember { mutableStateOf(false) }
     
     val categories by viewModel.categories.collectAsState()
+    
+    // Dialog chọn ảnh từ drawable
+    if (showDrawableDialog) {
+        DrawablePickerDialog(
+            onDismiss = { showDrawableDialog = false },
+            onImageSelected = { drawableName ->
+                imagePath = drawableName
+                showDrawableDialog = false
+            }
+        )
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -358,6 +422,64 @@ fun MenuItemDialog(
                     .fillMaxWidth()
                     .padding(vertical = 8.dp)
             ) {
+                // Phần chọn ảnh
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Hiển thị ảnh đã chọn hoặc ImagePicker
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        ImagePicker(
+                            currentImagePath = imagePath,
+                            onImageSelected = { path ->
+                                imagePath = path ?: ""
+                            }
+                        )
+                        
+                        Text("Từ thiết bị", fontSize = 12.sp)
+                    }
+                    
+                    // Nút chọn ảnh từ drawable
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Button(
+                            onClick = { showDrawableDialog = true },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                            ),
+                            shape = RoundedCornerShape(8.dp),
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+                        ) {
+                            Text("Chọn từ ứng dụng")
+                        }
+                        
+                        Text("Từ drawable", fontSize = 12.sp)
+                    }
+                }
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                // Phần hiển thị ảnh đã chọn (nếu là drawable)
+                if (imagePath.isNotEmpty() && !imagePath.startsWith("/")) {
+                    // Sử dụng DrawableResourceUtils thay vì getIdentifier
+                    val resourceId = DrawableResourceUtils.getDrawableResourceId(imagePath)
+                    
+                    if (resourceId != null) {
+                        Text(
+                            "Ảnh đã chọn: $imagePath",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
                 OutlinedTextField(
                     value = itemName,
                     onValueChange = { itemName = it },
@@ -365,6 +487,16 @@ fun MenuItemDialog(
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     isError = hasError && itemName.isEmpty()
+                )
+                
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                OutlinedTextField(
+                    value = itemDescription,
+                    onValueChange = { itemDescription = it },
+                    label = { Text("Mô tả") },
+                    modifier = Modifier.fillMaxWidth(),
+                    maxLines = 3
                 )
                 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -442,7 +574,9 @@ fun MenuItemDialog(
                         onSave(
                             itemName,
                             itemPrice.toDoubleOrNull() ?: 0.0,
-                            if (isEdit) item?.categoryId?.toString() ?: "" else selectedCategoryId
+                            if (isEdit) item?.categoryId?.toString() ?: "" else selectedCategoryId,
+                            imagePath.ifEmpty { null },
+                            itemDescription
                         )
                     } else {
                         hasError = true
@@ -452,6 +586,66 @@ fun MenuItemDialog(
                 Text("Lưu")
             }
         },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Hủy")
+            }
+        }
+    )
+}
+
+/**
+ * Dialog hiển thị danh sách hình ảnh có sẵn trong drawable
+ */
+@Composable
+fun DrawablePickerDialog(
+    onDismiss: () -> Unit,
+    onImageSelected: (String) -> Unit
+) {
+
+    
+    // Sử dụng danh sách drawable từ DrawableResourceUtils
+    val drawableNames = DrawableResourceUtils.availableDrawables
+    
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Chọn hình ảnh") },
+        text = {
+            LazyColumn {
+                items(drawableNames.chunked(3)) { row ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        row.forEach { drawableName ->
+                            // Sử dụng DrawableResourceUtils thay vì getIdentifier
+                            val resourceId = DrawableResourceUtils.getDrawableResourceId(drawableName)
+                            
+                            if (resourceId != null) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(90.dp)
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(Color.LightGray)
+                                        .clickable{ onImageSelected(drawableName) },
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Image(
+                                        painter = painterResource(id = resourceId),
+                                        contentDescription = drawableName,
+                                        modifier = Modifier.fillMaxSize(),
+                                        contentScale = ContentScale.Crop
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {},
         dismissButton = {
             TextButton(onClick = onDismiss) {
                 Text("Hủy")

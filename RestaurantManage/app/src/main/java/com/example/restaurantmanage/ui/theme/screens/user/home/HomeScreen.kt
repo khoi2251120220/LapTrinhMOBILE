@@ -2,19 +2,40 @@ package com.example.restaurantmanage.ui.theme.screens.user.home
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -24,29 +45,20 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
 import com.example.restaurantmanage.R
 import com.example.restaurantmanage.data.local.RestaurantDatabase
-import com.example.restaurantmanage.data.local.dao.CategoryDao
-import com.example.restaurantmanage.data.local.dao.MenuItemDao
-import com.example.restaurantmanage.data.local.entity.CategoryEntity
-import com.example.restaurantmanage.data.local.entity.MenuItemEntity
-import com.example.restaurantmanage.data.models.MenuCategory
 import com.example.restaurantmanage.data.models.MenuItem
+import com.example.restaurantmanage.util.DrawableResourceUtils
 import com.example.restaurantmanage.viewmodels.CartViewModel
 import com.example.restaurantmanage.viewmodels.CartViewModelFactory
 import com.example.restaurantmanage.viewmodels.HomeViewModel
 import com.example.restaurantmanage.viewmodels.HomeViewModelFactory
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.flowOf
 import java.text.NumberFormat
 import java.util.Locale
+import android.util.Log
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -62,6 +74,15 @@ fun HomeScreen(
     val featuredItems by homeViewModel.featuredItems.collectAsState()
     val categories by homeViewModel.categories.collectAsState()
     val searchText = remember { mutableStateOf(TextFieldValue("")) }
+    
+    // Log để debug
+    Log.d("HomeScreen", "Categories size: ${categories.size}")
+    categories.forEach { category ->
+        Log.d("HomeScreen", "Category: ${category.name}, Items: ${category.items.size}")
+        category.items.forEach { item ->
+            Log.d("HomeScreen", "  - Item: ${item.name}, Price: ${item.price}, Image: ${item.image}")
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -137,11 +158,161 @@ fun HomeScreen(
                                 item = item,
                                 onItemClick = { 
                                     if (item.inStock) {
-                                        cartViewModel.addToCart(item)
+                                        // Navigate to detail screen when clicked
+                                        navController.navigate("food_detail/${item.id}")
                                     }
                                 }
                             )
                         }
+                    }
+                }
+            }
+
+            // Danh sách món ăn với nút điều hướng
+            item {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        "Danh sách món ăn",
+                        style = MaterialTheme.typography.headlineMedium
+                    )
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_arrow_right),
+                        contentDescription = "Xem tất cả",
+                        modifier = Modifier
+                            .size(24.dp)
+                            .clickable { navController.navigate("menu") }
+                    )
+                }
+            }
+
+            // Hiển thị danh sách món ăn theo dạng lưới 2 cột
+            item {
+                // Debug với text
+                if (categories.isEmpty()) {
+                    Text(
+                        text = "Không có danh mục nào",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.Red
+                    )
+                }
+                
+                val allItems = categories.flatMap { it.items }
+
+                Text(
+                    text = "Tổng số món: ${allItems.size}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.Gray
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    // Lọc món ăn từ danh mục "Đồ ăn"
+                    val foodCategory = categories.find { it.name == "Đồ ăn" }
+                    val foodItems = foodCategory?.items?.take(2) ?: emptyList()
+                    Log.d("HomeScreen", "Food category: ${foodCategory?.name}, Food items count: ${foodItems.size}")
+
+                    if (foodItems.isNotEmpty()) {
+                        foodItems.forEach { item ->
+                            SimpleMenuItemCard(
+                                name = item.name,
+                                price = item.price,
+                                imageRes = DrawableResourceUtils.getDrawableResourceId(item.image) ?: R.drawable.placeholder_food,
+                                modifier = Modifier.weight(1f),
+                                onItemClick = {
+                                    navController.navigate("food_detail/${item.id}")
+                                }
+                            )
+                        }
+                    } else {
+                        // Nếu không có món ăn nào, hiển thị placeholder
+                        SimpleMenuItemCard(
+                            name = "Món ăn mẫu 1",
+                            price = 150000.0,
+                            imageRes = R.drawable.food1,
+                            modifier = Modifier.weight(1f),
+                            onItemClick = {}
+                        )
+                        SimpleMenuItemCard(
+                            name = "Món ăn mẫu 2",
+                            price = 100000.0,
+                            imageRes = R.drawable.food2,
+                            modifier = Modifier.weight(1f),
+                            onItemClick = {}
+                        )
+                    }
+                }
+            }
+
+            // Danh sách thức uống với nút điều hướng
+            item {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        "Danh sách thức uống",
+                        style = MaterialTheme.typography.headlineMedium
+                    )
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_arrow_right),
+                        contentDescription = "Xem tất cả",
+                        modifier = Modifier
+                            .size(24.dp)
+                            .clickable { navController.navigate("menu") }
+                    )
+                }
+            }
+
+            // Hiển thị danh sách thức uống theo dạng lưới 2 cột
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    // Lọc thức uống từ danh mục "Thức uống"
+                    val drinkCategory = categories.find { it.name == "Thức uống" }
+                    val drinkItems = drinkCategory?.items?.take(2) ?: emptyList()
+                    Log.d("HomeScreen", "Drink category: ${drinkCategory?.name}, Drink items count: ${drinkItems.size}")
+
+                    if (drinkItems.isNotEmpty()) {
+                        drinkItems.forEach { item ->
+                            SimpleMenuItemCard(
+                                name = item.name,
+                                price = item.price,
+                                imageRes = DrawableResourceUtils.getDrawableResourceId(item.image) ?: R.drawable.drink,
+                                modifier = Modifier.weight(1f),
+                                onItemClick = {
+                                    navController.navigate("food_detail/${item.id}")
+                                }
+                            )
+                        }
+                    } else {
+                        // Nếu không có thức uống nào, hiển thị placeholder
+                        SimpleMenuItemCard(
+                            name = "Nước ép dâu",
+                            price = 30000.0,
+                            imageRes = R.drawable.nuocepdau,
+                            modifier = Modifier.weight(1f),
+                            onItemClick = {}
+                        )
+                        SimpleMenuItemCard(
+                            name = "Nước ép táo",
+                            price = 25000.0,
+                            imageRes = R.drawable.nuoceptao,
+                            modifier = Modifier.weight(1f),
+                            onItemClick = {}
+                        )
                     }
                 }
             }
@@ -171,7 +342,8 @@ fun HomeScreen(
                                                 item = item,
                                                 onItemClick = { 
                                                     if (item.inStock) {
-                                                        cartViewModel.addToCart(item)
+                                                        // Navigate to detail screen when clicked
+                                                        navController.navigate("food_detail/${item.id}")
                                                     }
                                                 }
                                             )
@@ -210,8 +382,15 @@ fun FeaturedItemCard(
             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
+                // Load image with DrawableResourceUtils
+                val imageRes = if (item.image.isNotEmpty()) {
+                    DrawableResourceUtils.getDrawableResourceId(item.image) ?: R.drawable.placeholder
+                } else {
+                    R.drawable.placeholder
+                }
+                
                 Image(
-                    painter = painterResource(id = R.drawable.placeholder),
+                    painter = painterResource(id = imageRes),
                     contentDescription = item.name,
                     modifier = Modifier
                         .fillMaxSize()
@@ -260,8 +439,15 @@ fun MenuItemCard(
             modifier = Modifier.padding(8.dp)
         ) {
             Box {
+                // Load image with DrawableResourceUtils
+                val imageRes = if (item.image.isNotEmpty()) {
+                    DrawableResourceUtils.getDrawableResourceId(item.image) ?: R.drawable.placeholder
+                } else {
+                    R.drawable.placeholder
+                }
+                
                 Image(
-                    painter = painterResource(id = R.drawable.placeholder),
+                    painter = painterResource(id = imageRes),
                     contentDescription = item.name,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -309,64 +495,62 @@ fun MenuItemCard(
     }
 }
 
+@Composable
+fun SimpleMenuItemCard(
+    name: String,
+    price: Double,
+    imageRes: Int,
+    modifier: Modifier = Modifier,
+    onItemClick: () -> Unit
+) {
+    Card(
+        modifier = modifier
+            .clickable(onClick = onItemClick),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        shape = RoundedCornerShape(8.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = Color.White
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .padding(8.dp)
+        ) {
+            Box {
+                Image(
+                    painter = painterResource(id = imageRes),
+                    contentDescription = name,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(120.dp)
+                        .clip(RoundedCornerShape(8.dp)),
+                    contentScale = ContentScale.Crop
+                )
+            }
+            Column(
+                modifier = Modifier
+                    .padding(horizontal = 4.dp, vertical = 8.dp)
+            ) {
+
+                Text(
+                    text = name,
+                    style = MaterialTheme.typography.bodyMedium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    text = formatPrice(price),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+        }
+    }
+}
+
 private fun formatPrice(price: Double): String {
     return NumberFormat.getCurrencyInstance(Locale("vi", "VN"))
         .format(price)
         .replace("₫", "VNĐ")
 }
 
-//@Preview(showBackground = true)
-//@Composable
-//fun PreviewHomeScreen() {
-//    // Dữ liệu mẫu
-//    val mockFeaturedItems = listOf(
-//        MenuItem("1", "Tôm sốt cà chua", 60000.0, 1, 10, true, "tom_sot_ca", "Ngon tuyệt"),
-//        MenuItem("2", "Nước ép dâu", 40000.0, 2, 5, true, "nuoc_ep_dau", "Tươi mát")
-//    )
-//    val mockCategories = listOf(
-//        MenuCategory(1, "Thức ăn", mockFeaturedItems.filter { it.categoryId == 1 }),
-//        MenuCategory(2, "Đồ uống", mockFeaturedItems.filter { it.categoryId == 2 })
-//    )
-//
-//    // Mock HomeViewModel cho Preview
-//    val mockHomeViewModel = object : HomeViewModel(
-//        menuItemDao = FakeMenuItemDao(),
-//        categoryDao = FakeCategoryDao()
-//    ) {
-//        override val featuredItems: StateFlow<List<MenuItem>>
-//            get() = MutableStateFlow(mockFeaturedItems)
-//
-//        override val categories: StateFlow<List<MenuCategory>>
-//            get() = MutableStateFlow(mockCategories)
-//
-////        override fun searchMenuItems(query: String) {
-////            // Không cần thực hiện tìm kiếm trong Preview
-////        }
-//    }
-//
-//    HomeScreen(
-//        navController = rememberNavController(),
-//        homeViewModel = mockHomeViewModel
-//    )
-//}
-//
-//// Fake DAO cho Preview
-//class FakeMenuItemDao : MenuItemDao {
-//    override fun getAllMenuItems(): Flow<List<MenuItemEntity>> = flowOf(emptyList())
-//    override fun getMenuItemsByCategory(categoryId: Int): Flow<List<MenuItemEntity>> = flowOf(emptyList())
-//    override suspend fun getMenuItemById(id: String): MenuItemEntity? = null
-//    override suspend fun insertMenuItem(menuItem: MenuItemEntity) {}
-//    override suspend fun insertMenuItems(menuItems: List<MenuItemEntity>) {}
-//    override suspend fun updateMenuItem(menuItem: MenuItemEntity) {}
-//    override suspend fun deleteMenuItem(menuItem: MenuItemEntity) {}
-//    override fun getAvailableMenuItems(): Flow<List<MenuItemEntity>> = flowOf(emptyList())
-//}
-//
-//class FakeCategoryDao : CategoryDao {
-//    override fun getAllCategories(): Flow<List<CategoryEntity>> = flowOf(emptyList())
-//    override suspend fun getCategoryById(id: Int): CategoryEntity? = null
-//    override suspend fun insertCategory(category: CategoryEntity) {}
-//    override suspend fun insertCategories(categories: List<CategoryEntity>) {}
-//    override suspend fun updateCategory(category: CategoryEntity) {}
-//    override suspend fun deleteCategory(category: CategoryEntity) {}
-//}

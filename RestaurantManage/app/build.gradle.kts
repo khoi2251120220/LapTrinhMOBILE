@@ -46,11 +46,15 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
 
-    implementation(platform("com.google.firebase:firebase-bom:33.11.0"))
-    implementation("com.google.firebase:firebase-analytics")
-    implementation ("com.google.firebase:firebase-firestore")
-    implementation ("com.google.firebase:firebase-auth:23.2.0")
-    implementation ("com.google.android.gms:play-services-auth:20.7.0")
+    // Cập nhật Firebase BOM với phiên bản ổn định
+    implementation(platform("com.google.firebase:firebase-bom:32.7.2"))
+    implementation("com.google.firebase:firebase-analytics-ktx")
+    implementation("com.google.firebase:firebase-firestore-ktx")
+    implementation("com.google.firebase:firebase-auth-ktx")
+    
+    // Downgrade Google Play Services xuống phiên bản ổn định hơn
+    implementation("com.google.android.gms:play-services-auth:20.7.0")
+    implementation("com.google.android.gms:play-services-base:18.3.0")
 
     // Sử dụng Compose BOM để đồng bộ phiên bản
     implementation(platform("androidx.compose:compose-bom:2024.09.03"))
@@ -72,9 +76,8 @@ dependencies {
     debugImplementation("androidx.compose.ui:ui-test-manifest")
 
     //roomdb
-
-    implementation ("androidx.room:room-runtime:2.6.1")
-    kapt ("androidx.room:room-compiler:2.6.1")
-    implementation ("androidx.room:room-ktx:2.6.1")
-    implementation ("com.google.code.gson:gson:2.8.9")
+    implementation("androidx.room:room-runtime:2.6.1")
+    kapt("androidx.room:room-compiler:2.6.1")
+    implementation("androidx.room:room-ktx:2.6.1")
+    implementation("com.google.code.gson:gson:2.8.9")
 }

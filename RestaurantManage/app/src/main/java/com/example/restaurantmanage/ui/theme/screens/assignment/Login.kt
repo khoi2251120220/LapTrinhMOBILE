@@ -88,6 +88,7 @@ fun LoginScreen(navController: NavHostController) {
                                     val destination = if (role == "admin") "admin_screen" else "user_screen"
                                     navController.navigate(destination) {
                                         popUpTo("login_screen") { inclusive = true }
+                                        launchSingleTop = true
                                     }
                                 }
                                 .addOnFailureListener { e ->

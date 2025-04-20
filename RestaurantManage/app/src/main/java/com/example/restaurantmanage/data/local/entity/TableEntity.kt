@@ -9,5 +9,6 @@ data class TableEntity(
     val id: Int = 0,
     val name: String,
     val capacity: Int,
-    val status: String = "AVAILABLE" // AVAILABLE, RESERVED, OCCUPIED
+    val status: String = "AVAILABLE", // AVAILABLE, RESERVED, OCCUPIED
+    val image: String = "" // Đường dẫn đến hình ảnh của bàn
 ) 

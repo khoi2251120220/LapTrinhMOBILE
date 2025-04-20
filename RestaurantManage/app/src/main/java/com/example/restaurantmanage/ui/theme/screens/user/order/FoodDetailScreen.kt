@@ -11,6 +11,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -18,16 +21,19 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
-import coil.compose.rememberAsyncImagePainter
+import coil.compose.AsyncImage
 import com.example.restaurantmanage.data.local.dao.MenuItemDao
 import com.example.restaurantmanage.ui.theme.RestaurantManageTheme
 import com.example.restaurantmanage.ui.theme.components.AppBar
 import com.example.restaurantmanage.data.local.entity.MenuItemEntity
+import com.example.restaurantmanage.util.DrawableResourceUtils
 import com.example.restaurantmanage.viewmodels.MenuViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
+import java.io.File
+import android.util.Log
 
 @Composable
 fun FoodDetailScreen(
@@ -35,13 +41,12 @@ fun FoodDetailScreen(
     viewModel: MenuViewModel,
     navController: NavController
 ) {
-
     var menuItem by remember { mutableStateOf<MenuItemEntity?>(null) }
-
 
     LaunchedEffect(menuItemId) {
         viewModel.getMenuItemById(menuItemId).collect { item ->
             menuItem = item
+            Log.d("FoodDetailScreen", "Loaded item: ${item?.name}, image: ${item?.image}")
         }
     }
 
@@ -79,17 +84,58 @@ fun FoodDetailScreen(
                 .background(Color.White)
                 .padding(innerPadding)
         ) {
-
             menuItem?.let {
-                Image(
-                    painter = rememberAsyncImagePainter(it.image),
-                    contentDescription = "Hình ảnh ${it.name}",
+                // Hiển thị hình ảnh
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(200.dp)
-                        .background(Color.LightGray) // Màu nền placeholder
-                )
-
+                        .background(Color.LightGray)
+                ) {
+                    val context = LocalContext.current
+                    
+                    if (it.image.isNotEmpty() && !it.image.startsWith("/")) {
+                        // Sử dụng DrawableResourceUtils thay vì getIdentifier
+                        val resourceId = DrawableResourceUtils.getDrawableResourceId(it.image)
+                        
+                        if (resourceId != null) {
+                            // Nếu là drawable resource
+                            Log.d("FoodDetailScreen", "Loading drawable resource: ${it.image}, id: $resourceId")
+                            Image(
+                                painter = painterResource(id = resourceId),
+                                contentDescription = it.name,
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                            )
+                        } else {
+                            // Nếu không tìm thấy drawable, hiển thị ảnh placeholder
+                            AsyncImage(
+                                model = "https://via.placeholder.com/200",
+                                contentDescription = it.name,
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                            )
+                        }
+                    } else if (it.image.startsWith("/")) {
+                        // Nếu là đường dẫn file
+                        val file = File(it.image)
+                        Log.d("FoodDetailScreen", "Loading image from file: ${it.image}, exists: ${file.exists()}")
+                        AsyncImage(
+                            model = if (file.exists()) it.image else "https://via.placeholder.com/200",
+                            contentDescription = it.name,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        // Nếu không có ảnh
+                        AsyncImage(
+                            model = "https://via.placeholder.com/200",
+                            contentDescription = it.name,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
+                }
 
                 Column(
                     modifier = Modifier
@@ -106,7 +152,6 @@ fun FoodDetailScreen(
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
 
-
                     Text(
                         text = "${it.price.toInt()} VNĐ",
                         style = TextStyle(
@@ -115,7 +160,6 @@ fun FoodDetailScreen(
                         ),
                         modifier = Modifier.padding(bottom = 16.dp)
                     )
-
 
                     Text(
                         text = "Mô tả",
@@ -126,7 +170,6 @@ fun FoodDetailScreen(
                         ),
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
-
 
                     Text(
                         text = it.description,
@@ -158,7 +201,6 @@ fun FoodDetailScreen(
                     }
                 }
             } ?: run {
-
                 Text(text = "Loading...", modifier = Modifier.padding(16.dp))
             }
         }

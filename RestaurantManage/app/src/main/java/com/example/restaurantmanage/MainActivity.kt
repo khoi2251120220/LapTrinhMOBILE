@@ -36,22 +36,7 @@ class MainActivity : ComponentActivity() {
                     val database = RestaurantDatabase.getDatabase(this)
                     val menuItemDao = database.menuItemDao()
 
-                    val startDestination = if (auth.currentUser != null) {
-                        var destination = "user_screen"
-                        auth.currentUser?.uid?.let { userId ->
-                            firestore.collection("users").document(userId).get()
-                                .addOnSuccessListener { document ->
-                                    val role = document.getString("role") ?: "user"
-                                    destination = if (role == "admin") "admin_screen" else "user_screen"
-                                    navController.navigate(destination) {
-                                        popUpTo(navController.graph.startDestinationId) { inclusive = true }
-                                    }
-                                }
-                        }
-                        destination
-                    } else {
-                        "login_screen"
-                    }
+                    val startDestination = "login_screen"
 
                     NavHost(navController = navController, startDestination = startDestination) {
                         composable("login_screen") {
@@ -72,6 +57,21 @@ class MainActivity : ComponentActivity() {
                         }
                         composable("admin_screen") {
                             MainScreenAdmin()
+                        }
+                    }
+                    
+                    if (auth.currentUser != null) {
+                        auth.currentUser?.uid?.let { userId ->
+                            firestore.collection("users").document(userId).get()
+                                .addOnSuccessListener { document ->
+                                    val role = document.getString("role") ?: "user"
+                                    val destination = if (role == "admin") "admin_screen" else "user_screen"
+                                    
+                                    navController.navigate(destination) {
+                                        popUpTo("login_screen") { inclusive = true }
+                                        launchSingleTop = true
+                                    }
+                                }
                         }
                     }
                 }

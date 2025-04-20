@@ -16,25 +16,27 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.rememberAsyncImagePainter
+import coil.compose.AsyncImage
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.example.restaurantmanage.ui.theme.components.AppBar
 import com.example.restaurantmanage.data.local.entity.MenuItemEntity
-import com.example.restaurantmanage.data.local.entity.CategoryEntity
-import com.example.restaurantmanage.data.models.MenuCategory
 import com.example.restaurantmanage.viewmodels.MenuViewModel
 import com.example.restaurantmanage.viewmodels.MenuViewModelFactory
 import com.example.restaurantmanage.data.local.RestaurantDatabase
 import androidx.lifecycle.viewmodel.compose.viewModel
 import java.text.NumberFormat
 import java.util.Locale
+import java.io.File
+import android.util.Log
+import com.example.restaurantmanage.util.DrawableResourceUtils
 
 @Composable
 fun MenuItemView(menuItem: MenuItemEntity, navController: NavController) {
@@ -61,11 +63,43 @@ fun MenuItemView(menuItem: MenuItemEntity, navController: NavController) {
                     .clip(RoundedCornerShape(12.dp))
                     .background(MaterialTheme.colorScheme.surfaceVariant)
             ) {
-                Image(
-                    painter = rememberAsyncImagePainter(
-                        model = menuItem.image.ifEmpty { "https://via.placeholder.com/200" }
-                    ),
-                    contentDescription = null,
+
+                
+                // Debug thông tin hình ảnh để kiểm tra
+                Log.d("MenuItemView", "Image path: ${menuItem.image}")
+                
+                if (menuItem.image.isNotEmpty() && !menuItem.image.startsWith("/")) {
+                    // Sử dụng DrawableResourceUtils thay vì getIdentifier
+                    val resourceId = DrawableResourceUtils.getDrawableResourceId(menuItem.image)
+                    
+                    if (resourceId != null) {
+                        // Nếu là drawable resource
+                        Log.d("MenuItemView", "Loading drawable resource: ${menuItem.image}, id: $resourceId")
+                        Image(
+                            painter = painterResource(id = resourceId),
+                            contentDescription = menuItem.name,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                        return@Box
+                    }
+                }
+                
+                // Nếu là đường dẫn file hoặc URL hoặc drawable không tìm thấy
+                val imageModel = when {
+                    // Kiểm tra xem đường dẫn có phải là đường dẫn file hoàn chỉnh không
+                    menuItem.image.startsWith("/") -> {
+                        val file = File(menuItem.image)
+                        if (file.exists()) menuItem.image else "https://via.placeholder.com/200"
+                    }
+                    // Nếu không có hình ảnh hoặc không tìm thấy drawable
+                    else -> "https://via.placeholder.com/200"
+                }
+                
+                Log.d("MenuItemView", "Loading image from model: $imageModel")
+                AsyncImage(
+                    model = imageModel,
+                    contentDescription = menuItem.name,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop
                 )

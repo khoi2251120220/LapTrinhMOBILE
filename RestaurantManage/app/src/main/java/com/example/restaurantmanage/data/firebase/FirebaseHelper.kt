@@ -10,10 +10,15 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-object FirebaseHelper {
-    private val auth = FirebaseAuth.getInstance()
-    private val firestore = FirebaseFirestore.getInstance()
-    private val usersCollection = firestore.collection("users")
+/**
+ * Helper class cho Firebase operations. Sử dụng non-static methods thay vì static fields
+ * để tránh memory leaks liên quan đến Context.
+ */
+class FirebaseHelper {
+    // Sử dụng lazy initialization cho các Firebase instances
+    private val auth by lazy { FirebaseAuth.getInstance() }
+    private val firestore by lazy { FirebaseFirestore.getInstance() }
+    private val usersCollection by lazy { firestore.collection("users") }
     
     // Lấy danh sách user từ Firestore
     suspend fun getAllUsers(): List<User> {
@@ -41,7 +46,7 @@ object FirebaseHelper {
                 )
             }
         } catch (e: Exception) {
-            Log.e("FirebaseHelper", "Lỗi khi lấy danh sách người dùng", e)
+            Log.e(TAG, "Lỗi khi lấy danh sách người dùng", e)
             emptyList()
         }
     }
@@ -54,7 +59,7 @@ object FirebaseHelper {
                 .await()
             true
         } catch (e: Exception) {
-            Log.e("FirebaseHelper", "Lỗi khi cập nhật trạng thái người dùng", e)
+            Log.e(TAG, "Lỗi khi cập nhật trạng thái người dùng", e)
             false
         }
     }
@@ -67,7 +72,7 @@ object FirebaseHelper {
                 .await()
             true
         } catch (e: Exception) {
-            Log.e("FirebaseHelper", "Lỗi khi cập nhật vai trò người dùng", e)
+            Log.e(TAG, "Lỗi khi cập nhật vai trò người dùng", e)
             false
         }
     }
@@ -83,13 +88,13 @@ object FirebaseHelper {
             
             true
         } catch (e: Exception) {
-            Log.e("FirebaseHelper", "Lỗi khi xóa người dùng", e)
+            Log.e(TAG, "Lỗi khi xóa người dùng", e)
             false
         }
     }
     
     // Thiết lập dữ liệu người dùng mới khi đăng ký
-    suspend fun setupNewUser(firebaseUser: FirebaseUser, role: String = "CUSTOMER"): Boolean {
+    suspend fun setupNewUser(firebaseUser: FirebaseUser, role: String = "USER"): Boolean {
         return try {
             val userData = hashMapOf(
                 "name" to (firebaseUser.displayName ?: ""),
@@ -107,7 +112,7 @@ object FirebaseHelper {
                 
             true
         } catch (e: Exception) {
-            Log.e("FirebaseHelper", "Lỗi khi thiết lập người dùng mới", e)
+            Log.e(TAG, "Lỗi khi thiết lập người dùng mới", e)
             false
         }
     }
@@ -119,7 +124,7 @@ object FirebaseHelper {
                 .update("lastLogin", getCurrentDateTime())
                 .await()
         } catch (e: Exception) {
-            Log.e("FirebaseHelper", "Lỗi khi cập nhật thời gian đăng nhập", e)
+            Log.e(TAG, "Lỗi khi cập nhật thời gian đăng nhập", e)
         }
     }
     
@@ -131,7 +136,7 @@ object FirebaseHelper {
             val document = usersCollection.document(currentUser.uid).get().await()
             document.getString("role") ?: "CUSTOMER"
         } catch (e: Exception) {
-            Log.e("FirebaseHelper", "Lỗi khi lấy vai trò người dùng", e)
+            Log.e(TAG, "Lỗi khi lấy vai trò người dùng", e)
             "CUSTOMER"
         }
     }
@@ -140,5 +145,19 @@ object FirebaseHelper {
     private fun getCurrentDateTime(): String {
         val sdf = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
         return sdf.format(Date())
+    }
+    
+    companion object {
+        private const val TAG = "FirebaseHelper"
+        
+        // Instance duy nhất của FirebaseHelper (Singleton pattern)
+        @Volatile
+        private var instance: FirebaseHelper? = null
+        
+        fun getInstance(): FirebaseHelper {
+            return instance ?: synchronized(this) {
+                instance ?: FirebaseHelper().also { instance = it }
+            }
+        }
     }
 } 

@@ -11,11 +11,14 @@ import com.example.restaurantmanage.data.models.MenuItem
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import android.util.Log
 
 class MenuViewModel(
     private val menuItemDao: MenuItemDao,
     private val categoryDao: CategoryDao
 ) : ViewModel() {
+    private val TAG = "MenuViewModel"
+    
     private val _categories = MutableStateFlow<List<MenuCategory>>(emptyList())
     val categories: StateFlow<List<MenuCategory>> = _categories.asStateFlow()
 
@@ -85,7 +88,7 @@ class MenuViewModel(
         _selectedCategory.value = category
     }
 
-    fun addMenuItem(name: String, price: Double, categoryId: String, image: String = "", description: String = "") {
+    fun addMenuItem(name: String, price: Double, categoryId: String, imagePath: String? = null, description: String = "") {
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 _isLoading.value = true
@@ -102,14 +105,16 @@ class MenuViewModel(
                     categoryId = targetCategoryId,
                     orderCount = 0,
                     inStock = true,
-                    image = image,
+                    image = imagePath ?: "",
                     description = description
                 )
 
                 menuItemDao.insertMenuItem(newItem)
+                Log.d(TAG, "Added menu item with image: $imagePath")
                 loadMenuData()
                 _error.value = null
             } catch (e: Exception) {
+                Log.e(TAG, "Error adding menu item", e)
                 _error.value = "Không thể thêm món: ${e.message}"
             } finally {
                 _isLoading.value = false
@@ -117,17 +122,22 @@ class MenuViewModel(
         }
     }
 
-    fun updateMenuItem(id: String, name: String, price: Double, image: String? = null, description: String? = null) {
+    fun updateMenuItem(id: String, name: String, price: Double, category: String? = null, imagePath: String? = null, description: String? = null) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 _isLoading.value = true
+                
+                // Cập nhật thông tin cơ bản
                 menuItemDao.updateMenuItem(id, name, price)
-                if (image != null || description != null) {
-                    menuItemDao.updateItemDetails(id, image, description)
-                }
+                
+                // Cập nhật chi tiết khác nếu có
+                menuItemDao.updateItemDetails(id, imagePath, description)
+                
+                Log.d(TAG, "Updated menu item: $id with image: $imagePath")
                 loadMenuData()
                 _error.value = null
             } catch (e: Exception) {
+                Log.e(TAG, "Error updating menu item", e)
                 _error.value = "Không thể cập nhật món: ${e.message}"
             } finally {
                 _isLoading.value = false
@@ -181,7 +191,9 @@ class MenuViewModel(
             price = price,
             categoryId = categoryId,
             orderCount = orderCount,
-            inStock = inStock
+            inStock = inStock,
+            image = image,
+            description = description
         )
     }
 }

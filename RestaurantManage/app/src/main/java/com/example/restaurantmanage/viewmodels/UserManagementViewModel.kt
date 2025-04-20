@@ -18,6 +18,9 @@ class UserManagementViewModel : ViewModel() {
 
     private val _errorMessage = MutableStateFlow("")
     val errorMessage: StateFlow<String> = _errorMessage
+    
+    // Sử dụng FirebaseHelper instance
+    private val firebaseHelper = FirebaseHelper.getInstance()
 
     init {
         loadUsers()
@@ -27,7 +30,7 @@ class UserManagementViewModel : ViewModel() {
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                val usersList = FirebaseHelper.getAllUsers()
+                val usersList = firebaseHelper.getAllUsers()
                 _users.value = usersList
                 _isLoading.value = false
             } catch (e: Exception) {
@@ -41,7 +44,7 @@ class UserManagementViewModel : ViewModel() {
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                val success = FirebaseHelper.updateUserStatus(userId, newStatus)
+                val success = firebaseHelper.updateUserStatus(userId, newStatus)
                 
                 if (success) {
                     // Cập nhật danh sách người dùng sau khi thay đổi
@@ -68,7 +71,7 @@ class UserManagementViewModel : ViewModel() {
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                val success = FirebaseHelper.updateUserRole(userId, newRole)
+                val success = firebaseHelper.updateUserRole(userId, newRole)
                 
                 if (success) {
                     // Cập nhật danh sách người dùng sau khi thay đổi
@@ -95,7 +98,7 @@ class UserManagementViewModel : ViewModel() {
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                val success = FirebaseHelper.deleteUser(userId)
+                val success = firebaseHelper.deleteUser(userId)
                 
                 if (success) {
                     // Cập nhật danh sách người dùng
