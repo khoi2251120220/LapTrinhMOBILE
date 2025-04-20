@@ -24,9 +24,10 @@ import kotlinx.coroutines.launch
         OrderEntity::class,
         OrderItemEntity::class,
         BookingEntity::class,
-        CartItemEntity::class
+        CartItemEntity::class,
+        RatingEntity::class
     ],
-    version = 4,
+    version = 6,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -40,6 +41,7 @@ abstract class RestaurantDatabase : RoomDatabase() {
     abstract fun orderItemDao(): OrderItemDao
     abstract fun bookingDao(): BookingDao
     abstract fun cartItemDao(): CartItemDao
+    abstract fun ratingDao(): RatingDao
 
     companion object {
         @Volatile
@@ -47,9 +49,30 @@ abstract class RestaurantDatabase : RoomDatabase() {
         
         // Migration từ version 3 sang 4: thêm cột image vào bảng tables
         private val MIGRATION_3_4 = object : Migration(3, 4) {
-            override fun migrate(database: SupportSQLiteDatabase) {
+            override fun migrate(db: SupportSQLiteDatabase) {
                 // Thêm cột image vào bảng tables
-                database.execSQL("ALTER TABLE tables ADD COLUMN image TEXT NOT NULL DEFAULT ''")
+                db.execSQL("ALTER TABLE tables ADD COLUMN image TEXT NOT NULL DEFAULT ''")
+            }
+        }
+        
+        // Migration từ version 4 sang 5: thêm bảng ratings
+        private val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `ratings` (" +
+                    "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                    "`customer_name` TEXT NOT NULL, " +
+                    "`rating` INTEGER NOT NULL, " +
+                    "`feedback` TEXT NOT NULL, " +
+                    "`created_at` INTEGER NOT NULL)"
+                )
+            }
+        }
+        
+        // Migration từ version 5 sang 6: thêm cột customer_name vào bảng orders
+        private val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE orders ADD COLUMN customer_name TEXT NOT NULL DEFAULT 'Khách hàng'")
             }
         }
 
@@ -61,7 +84,7 @@ abstract class RestaurantDatabase : RoomDatabase() {
                     "restaurant_database"
                 )
                 .fallbackToDestructiveMigration()
-                .addMigrations(MIGRATION_3_4)
+                .addMigrations(MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
                 .build()
 
                 INSTANCE = instance

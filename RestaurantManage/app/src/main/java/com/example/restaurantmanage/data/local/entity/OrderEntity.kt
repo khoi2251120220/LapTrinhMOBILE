@@ -20,5 +20,6 @@ data class OrderEntity(
     @ColumnInfo(name = "start_time") val startTime: Long, // Store Date as Long
     // Order items will be handled in a separate relation table
     @ColumnInfo(name = "total_amount") val totalAmount: Double,
+    @ColumnInfo(name = "customer_name") val customerName: String = "Khách hàng",
     val status: String
 ) 

@@ -18,12 +18,23 @@ import com.example.restaurantmanage.ui.theme.screens.assignment.PasswordScreen
 import com.example.restaurantmanage.ui.theme.screens.user.booking.BookingScreen
 import com.example.restaurantmanage.ui.theme.screens.user.home.HomeScreen
 import com.example.restaurantmanage.ui.theme.screens.user.introduce.IntroduceScreen
+import com.example.restaurantmanage.ui.theme.screens.user.order.CartScreen
 import com.example.restaurantmanage.ui.theme.screens.user.order.FoodDetailScreen
 import com.example.restaurantmanage.ui.theme.screens.user.order.MenuScreen
+import com.example.restaurantmanage.ui.theme.screens.user.order.PaymentSuccessScreen
+import com.example.restaurantmanage.ui.theme.screens.user.order.RatingScreen
 import com.example.restaurantmanage.ui.theme.screens.user.personal.ProfileScreen
+import com.example.restaurantmanage.viewmodels.CartViewModel
+import com.example.restaurantmanage.viewmodels.CartViewModelFactory
 import com.example.restaurantmanage.viewmodels.MenuViewModel
 import com.example.restaurantmanage.viewmodels.MenuViewModelFactory
 import com.example.restaurantmanage.viewmodels.HomeViewModelFactory
+import com.example.restaurantmanage.viewmodels.OrderViewModel
+import com.example.restaurantmanage.viewmodels.OrderViewModelFactory
+import com.example.restaurantmanage.viewmodels.ProfileViewModel
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @Composable
 fun MainScreenUser() {
@@ -40,10 +51,24 @@ fun MainScreenUser() {
             categoryDao = database.categoryDao()
         )
     )
+    
+    // Khởi tạo CartViewModel
+    val cartViewModel: CartViewModel = viewModel(
+        factory = CartViewModelFactory(database)
+    )
+    
+    // Khởi tạo OrderViewModel
+    val orderViewModel: OrderViewModel = viewModel(
+        factory = OrderViewModelFactory(database)
+    )
+    
+    // Khởi tạo ProfileViewModel
+    val profileViewModel: ProfileViewModel = viewModel()
 
     Scaffold(
         bottomBar = {
-            if (currentRoute != "introduce") {
+            if (currentRoute != "introduce" && currentRoute != "payment_success" && 
+                currentRoute != "cart" && currentRoute != "rating") {
                 BottomNavBar(navController = navController, currentRoute = currentRoute)
             }
         }
@@ -74,7 +99,7 @@ fun MainScreenUser() {
                 )
             }
             composable("profile") {
-                ProfileScreen(navController)
+                ProfileScreen()
             }
             composable("login_screen") {
                 LoginScreen(navController)
@@ -86,6 +111,32 @@ fun MainScreenUser() {
             composable("detail/{menuItemId}") { backStackEntry ->
                 val menuItemId = backStackEntry.arguments?.getString("menuItemId") ?: ""
                 FoodDetailScreen(menuItemId, menuViewModel, navController)
+            }
+            composable("cart") {
+                CartScreen(
+                    navController = navController,
+                    cartViewModel = cartViewModel,
+                    orderViewModel = orderViewModel,
+                    profileViewModel = profileViewModel
+                )
+            }
+            composable("payment_success/{orderId}/{customerName}/{amount}") { backStackEntry ->
+                val orderId = backStackEntry.arguments?.getString("orderId") ?: ""
+                val customerName = backStackEntry.arguments?.getString("customerName") ?: "Khách hàng"
+                val amount = backStackEntry.arguments?.getString("amount") ?: "0"
+                
+                val currentDate = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(Date())
+                
+                PaymentSuccessScreen(
+                    navController = navController,
+                    orderId = orderId,
+                    customerName = customerName,
+                    amount = "$amount VNĐ",
+                    paymentTime = currentDate
+                )
+            }
+            composable("rating") {
+                RatingScreen(navController)
             }
         }
     }

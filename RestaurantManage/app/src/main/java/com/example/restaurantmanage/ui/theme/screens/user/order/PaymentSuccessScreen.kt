@@ -29,8 +29,8 @@ fun PaymentSuccessScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.White) // Nền trắng
-            .padding(horizontal = 32.dp), // Padding ngang giống trong hình
+            .background(Color.White)
+            .padding(horizontal = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -38,7 +38,7 @@ fun PaymentSuccessScreen(
         Text(
             text = "Thanh toán thành công",
             style = TextStyle(
-                fontSize = 20.sp,
+                fontSize = 24.sp,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center,
                 color = Color.Black
@@ -50,114 +50,136 @@ fun PaymentSuccessScreen(
 
         // Hướng dẫn
         Text(
-            text = "Hóa đơn của khách đã được thanh toán",
+            text = "Hóa đơn của quý khách đã được thanh toán thành công",
             style = TextStyle(
-                fontSize = 14.sp,
+                fontSize = 20.sp,
                 textAlign = TextAlign.Center,
-                color = Color.Black
+                color = Color.Gray
             ),
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(bottom = 32.dp)
         )
-
+        Spacer(modifier = Modifier.height(36.dp))
         // Thông tin hóa đơn
-        Column(
+        Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = 32.dp)
+                .padding(bottom = 32.dp),
+            colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F5F5)),
+            shape = RoundedCornerShape(16.dp)
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(8.dp)
             ) {
-                Text(
-                    text = "Mã đơn hàng",
-                    fontSize = 14.sp,
-                    color = Color.Gray
-                )
-                Text(
-                    text = orderId, // Dữ liệu động
-                    fontSize = 14.sp,
-                    color = Color.Black,
-                    fontWeight = FontWeight.Medium
-                )
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(
-                    text = "Tên khách hàng",
-                    fontSize = 14.sp,
-                    color = Color.Gray
-                )
-                Text(
-                    text = customerName, // Dữ liệu động
-                    fontSize = 14.sp,
-                    color = Color.Black,
-                    fontWeight = FontWeight.Medium
-                )
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(
-                    text = "Số tiền",
-                    fontSize = 14.sp,
-                    color = Color.Gray
-                )
-                Text(
-                    text = amount, // Dữ liệu động
-                    fontSize = 14.sp,
-                    color = Color.Black,
-                    fontWeight = FontWeight.Medium
-                )
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(
-                    text = "Thời gian thanh toán",
-                    fontSize = 14.sp,
-                    color = Color.Gray
-                )
-                Text(
-                    text = paymentTime, // Dữ liệu động
-                    fontSize = 14.sp,
-                    color = Color.Black,
-                    fontWeight = FontWeight.Medium
-                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "Mã đơn hàng",
+                        fontSize = 16.sp,
+                        color = Color.Gray
+                    )
+                    Text(
+                        text = orderId, // Dữ liệu động
+                        fontSize = 16.sp,
+                        color = Color.Black,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+                
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "Tên khách hàng",
+                        fontSize = 16.sp,
+                        color = Color.Gray
+                    )
+                    Text(
+                        text = customerName, // Dữ liệu động
+                        fontSize = 16.sp,
+                        color = Color.Black,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+                
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "Số tiền",
+                        fontSize = 16.sp,
+                        color = Color.Gray
+                    )
+                    Text(
+                        text = amount, // Dữ liệu động
+                        fontSize = 16.sp,
+                        color = Color.Black,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+                
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "Thời gian thanh toán",
+                        fontSize = 16.sp,
+                        color = Color.Gray
+                    )
+                    Text(
+                        text = paymentTime, // Dữ liệu động
+                        fontSize = 16.sp,
+                        color = Color.Black,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
             }
         }
+
+        
+        Spacer(modifier = Modifier.height(24.dp))
 
         // Nút "Trở về" và "Đánh giá"
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
-            // Nút "Trở về"
+            // Nút "Trở về trang chủ"
             Button(
                 onClick = {
-                    // Điều hướng về màn hình trước đó (ví dụ: MainScreen)
-                    navController.popBackStack()
+                    // Điều hướng về trang chủ thay vì quay lại
+                    navController.navigate("home") {
+                        // Xóa tất cả các màn hình trước đó khỏi back stack
+                        popUpTo("introduce") {
+                            inclusive = false
+                        }
+                    }
                 },
                 modifier = Modifier
-                    .width(120.dp)
-                    .height(40.dp),
-                shape = RoundedCornerShape(20.dp), // Bo góc tròn
+                    .width(180.dp)
+                    .height(48.dp),
+                shape = RoundedCornerShape(24.dp), // Bo góc tròn
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color(0xFFCCCCCC), // Màu xám
-                    contentColor = Color.White // Chữ trắng
+                    contentColor = Color.Black // Chữ đen
                 )
             ) {
                 Text(
-                    "Trở về",
+                    "Trở về trang chủ",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Medium
                 )
@@ -170,9 +192,9 @@ fun PaymentSuccessScreen(
                     navController.navigate("rating")
                 },
                 modifier = Modifier
-                    .width(120.dp)
-                    .height(40.dp),
-                shape = RoundedCornerShape(20.dp), // Bo góc tròn
+                    .width(180.dp)
+                    .height(48.dp),
+                shape = RoundedCornerShape(24.dp), // Bo góc tròn
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color.Black, // Màu đen
                     contentColor = Color.White // Chữ trắng

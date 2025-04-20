@@ -22,13 +22,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavController
 import com.example.restaurantmanage.viewmodels.ProfileViewModel
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
-    navController: NavController,
     viewModel: ProfileViewModel = viewModel()
 ) {
     val userProfile by viewModel.userProfile.collectAsState()
@@ -42,7 +39,6 @@ fun ProfileScreen(
     var phone by remember { mutableStateOf(userProfile.phone) }
     var address by remember { mutableStateOf(userProfile.address) }
     val favoriteItems = remember { mutableStateListOf<String>().apply { addAll(userProfile.favoriteItems) } }
-    var newFavoriteItem by remember { mutableStateOf("") }
 
     // Cập nhật UI khi userProfile thay đổi
     LaunchedEffect(userProfile) {
@@ -113,13 +109,7 @@ fun ProfileScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Hiển thị vai trò người dùng
-            Text(
-                text = "Vai trò: ${userProfile.role}",
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Medium,
-                color = if (userProfile.role == "admin") Color.Blue else Color.Black
-            )
+
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -210,116 +200,10 @@ fun ProfileScreen(
 
                     HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
 
-                    // Address
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.LocationOn,
-                            contentDescription = "Address",
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                        Spacer(modifier = Modifier.width(16.dp))
-                        OutlinedTextField(
-                            value = address,
-                            onValueChange = { address = it; viewModel.updateProfile(address = it) },
-                            label = { Text("Địa chỉ") },
-                            modifier = Modifier.fillMaxWidth(),
-                            enabled = !isLoading
-                        )
-                    }
+
                 }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Favorites Section
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.Favorite,
-                            contentDescription = "Favorites",
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                        Spacer(modifier = Modifier.width(16.dp))
-                        Text(
-                            text = "Favorites",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    // Add new favorite
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        OutlinedTextField(
-                            value = newFavoriteItem,
-                            onValueChange = { newFavoriteItem = it },
-                            label = { Text("Thêm món yêu thích") },
-                            modifier = Modifier.weight(1f),
-                            enabled = !isLoading
-                        )
-                        IconButton(
-                            onClick = {
-                                if (newFavoriteItem.isNotBlank()) {
-                                    favoriteItems.add(newFavoriteItem)
-                                    viewModel.updateProfile(favoriteItems = favoriteItems.toList())
-                                    newFavoriteItem = ""
-                                }
-                            },
-                            enabled = !isLoading
-                        ) {
-                            Icon(Icons.Default.Add, contentDescription = "Thêm")
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    // Favorite items list
-                    if (favoriteItems.isEmpty()) {
-                        Text(
-                            "Chưa có món yêu thích",
-                            modifier = Modifier.padding(8.dp),
-                            color = Color.Gray
-                        )
-                    } else {
-                        Column {
-                            favoriteItems.forEach { item ->
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 8.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(40.dp)
-                                            .background(Color.LightGray)
-                                    )
-                                    Spacer(modifier = Modifier.width(16.dp))
-                                    Text(item, modifier = Modifier.weight(1f))
-                                    IconButton(
-                                        onClick = {
-                                            favoriteItems.remove(item)
-                                            viewModel.updateProfile(favoriteItems = favoriteItems.toList())
-                                        },
-                                        enabled = !isLoading
-                                    ) {
-                                        Icon(
-                                            Icons.Default.Delete,
-                                            contentDescription = "Xóa",
-                                            tint = MaterialTheme.colorScheme.error
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
 
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -398,7 +282,6 @@ fun ProfileScreenPreview() {
             )
         }
         ProfileScreen(
-            navController = NavController(LocalContext.current),
             viewModel = mockViewModel
         )
     }

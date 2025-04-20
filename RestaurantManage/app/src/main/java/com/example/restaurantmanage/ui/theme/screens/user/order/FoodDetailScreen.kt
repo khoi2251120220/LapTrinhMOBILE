@@ -1,13 +1,35 @@
 package com.example.restaurantmanage.ui.theme.screens.user.order
 
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ShoppingCart
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -16,24 +38,20 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
-import com.example.restaurantmanage.data.local.dao.MenuItemDao
-import com.example.restaurantmanage.ui.theme.RestaurantManageTheme
-import com.example.restaurantmanage.ui.theme.components.AppBar
+import com.example.restaurantmanage.data.local.RestaurantDatabase
 import com.example.restaurantmanage.data.local.entity.MenuItemEntity
+import com.example.restaurantmanage.data.models.MenuItem
+import com.example.restaurantmanage.ui.theme.components.AppBar
 import com.example.restaurantmanage.util.DrawableResourceUtils
+import com.example.restaurantmanage.viewmodels.CartViewModel
+import com.example.restaurantmanage.viewmodels.CartViewModelFactory
 import com.example.restaurantmanage.viewmodels.MenuViewModel
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.flowOn
 import java.io.File
-import android.util.Log
 
 @Composable
 fun FoodDetailScreen(
@@ -42,6 +60,11 @@ fun FoodDetailScreen(
     navController: NavController
 ) {
     var menuItem by remember { mutableStateOf<MenuItemEntity?>(null) }
+    val context = LocalContext.current
+    val cartViewModel: CartViewModel = viewModel(
+        factory = CartViewModelFactory(RestaurantDatabase.getDatabase(context))
+    )
+    var quantity by remember { mutableIntStateOf(1) }
 
     LaunchedEffect(menuItemId) {
         viewModel.getMenuItemById(menuItemId).collect { item ->
@@ -92,7 +115,6 @@ fun FoodDetailScreen(
                         .height(200.dp)
                         .background(Color.LightGray)
                 ) {
-                    val context = LocalContext.current
                     
                     if (it.image.isNotEmpty() && !it.image.startsWith("/")) {
                         // Sử dụng DrawableResourceUtils thay vì getIdentifier
@@ -180,9 +202,71 @@ fun FoodDetailScreen(
                         modifier = Modifier.padding(bottom = 24.dp)
                     )
 
+                    // Thêm phần chọn số lượng
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Số lượng:",
+                            style = TextStyle(
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.Black
+                            )
+                        )
+                        
+                        Spacer(modifier = Modifier.width(16.dp))
+                        
+                        Button(
+                            onClick = { if (quantity > 1) quantity-- },
+                            modifier = Modifier.size(40.dp),
+                            shape = RoundedCornerShape(4.dp),
+                            contentPadding = PaddingValues(0.dp)
+                        ) {
+                            Text("-", fontSize = 20.sp)
+                        }
+                        
+                        Text(
+                            text = quantity.toString(),
+                            modifier = Modifier.padding(horizontal = 16.dp),
+                            fontSize = 18.sp
+                        )
+                        
+                        Button(
+                            onClick = { quantity++ },
+                            modifier = Modifier.size(40.dp),
+                            shape = RoundedCornerShape(4.dp),
+                            contentPadding = PaddingValues(0.dp)
+                        ) {
+                            Text("+", fontSize = 20.sp)
+                        }
+                    }
+
                     Button(
                         onClick = {
-                            // Xử lý thêm vào giỏ hàng (có thể gọi ViewModel hoặc điều hướng)
+                            // Chuyển đổi từ MenuItemEntity sang MenuItem
+                            val menuItemModel = MenuItem(
+                                id = it.id,
+                                name = it.name,
+                                price = it.price,
+                                categoryId = it.categoryId,
+                                orderCount = 0,
+                                inStock = true,
+                                image = it.image,
+                                description = it.description,
+                                imageResId = 0
+                            )
+                            
+                            // Thêm item vào giỏ hàng với số lượng đã chọn
+                            for (i in 1..quantity) {
+                                cartViewModel.addToCart(menuItemModel)
+                            }
+                            
+                            // Hiển thị thông báo và chuyển đến màn hình giỏ hàng
+                            navController.navigate("cart")
                         },
                         modifier = Modifier
                             .fillMaxWidth()

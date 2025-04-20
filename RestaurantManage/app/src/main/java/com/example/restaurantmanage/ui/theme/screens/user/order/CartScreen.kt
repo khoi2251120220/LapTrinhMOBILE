@@ -1,17 +1,38 @@
 package com.example.restaurantmanage.ui.theme.screens.user.order
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material3.*
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -20,32 +41,30 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
 import com.example.restaurantmanage.R
 import com.example.restaurantmanage.data.local.RestaurantDatabase
-import com.example.restaurantmanage.data.local.dao.CartItemDao
-import com.example.restaurantmanage.data.local.entity.CartItemEntity
 import com.example.restaurantmanage.data.models.CartItem
-import com.example.restaurantmanage.data.models.MenuItem
+import com.example.restaurantmanage.ui.theme.components.AppBar
+import com.example.restaurantmanage.util.DrawableResourceUtils
 import com.example.restaurantmanage.viewmodels.CartViewModel
 import com.example.restaurantmanage.viewmodels.CartViewModelFactory
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.flowOf
+import com.example.restaurantmanage.viewmodels.OrderViewModel
+import com.example.restaurantmanage.viewmodels.ProfileViewModel
+import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CartScreen(
     navController: NavController,
     cartViewModel: CartViewModel = viewModel(
         factory = CartViewModelFactory(RestaurantDatabase.getDatabase(LocalContext.current))
-    )
+    ),
+    orderViewModel: OrderViewModel,
+    profileViewModel: ProfileViewModel = viewModel()
 ) {
     val cartItems by cartViewModel.cartItems.collectAsState()
     val total by cartViewModel.total.collectAsState()
@@ -54,69 +73,269 @@ fun CartScreen(
     val selectedPayment by cartViewModel.selectedPayment.collectAsState()
     val paymentMethods by cartViewModel.paymentMethods.collectAsState()
     val isPaymentDropdownExpanded by cartViewModel.isPaymentDropdownExpanded.collectAsState()
+    
+    // Lấy thông tin người dùng từ ProfileViewModel
+    val userProfile by profileViewModel.userProfile.collectAsState()
+    
+    // Coroutine scope
+    val scope = rememberCoroutineScope()
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Giỏ hàng") },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.White,
-                    titleContentColor = Color.Black
-                )
+            AppBar(
+                title = "THANH TOÁN",
+                navController = navController,
+                showBackButton = true
             )
-        },
-        bottomBar = {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
-            ) {
-                // Tổng tiền
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
+        }
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .background(Color(0xFFF5F5F5))
+        ) {
+            if (cartItems.isEmpty()) {
+                EmptyCartView(navController)
+            } else {
+                // Payment method selection
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    shape = RoundedCornerShape(8.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White)
                 ) {
-                    Text("Tổng tiền:", fontSize = 18.sp)
-                    Text("${total.toInt()} VNĐ", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = "Thanh toán bằng",
+                            fontSize = 16.sp,
+                            color = Color.Black
+                        )
+                        
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.clickable { cartViewModel.togglePaymentDropdown() }
+                        ) {
+                            Text(
+                                text = selectedPayment,
+                                fontSize = 16.sp,
+                                color = Color.Gray
+                            )
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                                contentDescription = "Select",
+                                tint = Color.Gray
+                            )
+                        }
+                    }
                 }
-                // Thuế
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
+                
+                // Discount code section
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    shape = RoundedCornerShape(8.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White)
                 ) {
-                    Text("Thuế (10%):", fontSize = 18.sp)
-                    Text("${tax.toInt()} VNĐ", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = "Mã giảm giá",
+                            fontSize = 16.sp,
+                            color = Color.Black
+                        )
+                        
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Sử dụng mã khuyến mãi",
+                                fontSize = 16.sp,
+                                color = Color.Gray
+                            )
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                                contentDescription = "Enter code",
+                                tint = Color.Gray
+                            )
+                        }
+                    }
                 }
-                // Tổng cộng
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text("Tổng cộng:", fontSize = 18.sp)
-                    Text("${totalWithTax.toInt()} VNĐ", fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                }
-                Spacer(modifier = Modifier.height(8.dp))
-
-                // Chọn phương thức thanh toán
+                
+                // Section title for items
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { cartViewModel.togglePaymentDropdown() }
-                        .padding(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text("Phương thức thanh toán: $selectedPayment", fontSize = 16.sp)
-                    Spacer(modifier = Modifier.weight(1f))
-                    Icon(
-                        imageVector = Icons.Default.ArrowDropDown,
-                        contentDescription = "Dropdown",
-                        modifier = Modifier.size(24.dp)
+                    Text(
+                        text = "MÓN ĂN",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.DarkGray
+                    )
+                    Text(
+                        text = "MÔ TẢ",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.DarkGray
+                    )
+                    Text(
+                        text = "GIÁ",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.DarkGray,
+                        textAlign = TextAlign.End
                     )
                 }
+                
+                // Cart items
+                LazyColumn(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
+                ) {
+                    items(cartItems) { cartItem ->
+                        PaymentCartItemRow(cartItem = cartItem)
+                    }
+                }
+                
+                // Order summary
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    shape = RoundedCornerShape(8.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = "Tổng cộng (${cartItems.size})",
+                                fontSize = 16.sp,
+                                color = Color.Black
+                            )
+                            Text(
+                                text = "${total.toInt()} VNĐ",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.Black
+                            )
+                        }
+                        
+                        Spacer(modifier = Modifier.height(8.dp))
+                        
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = "Thuế",
+                                fontSize = 16.sp,
+                                color = Color.Black
+                            )
+                            Text(
+                                text = "${tax.toInt()} VNĐ",
+                                fontSize = 16.sp,
+                                color = Color.Black
+                            )
+                        }
+                        
+                        Spacer(modifier = Modifier.height(8.dp))
+                        HorizontalDivider()
+                        Spacer(modifier = Modifier.height(8.dp))
+                        
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = "Tổng",
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.Black
+                            )
+                            Text(
+                                text = "${totalWithTax.toInt()} VNĐ",
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.Black
+                            )
+                        }
+                    }
+                }
+                
+                // Checkout button
+                Button(
+                    onClick = {
+                        // Xử lý thanh toán
+                        scope.launch {
+                            try {
+                                // Lấy tên người dùng từ Profile, nếu không có thì dùng "Khách hàng"
+                                val customerName = userProfile.name.ifBlank { "Khách hàng" }
+                                
+                                // Tạo đơn hàng từ giỏ hàng với tên người dùng thật
+                                val orderId = orderViewModel.createOrderFromCart(
+                                    cartItems = cartItems,
+                                    totalAmount = totalWithTax,
+                                    customerName = customerName
+                                )
+                                
+                                // Xóa giỏ hàng
+                                cartViewModel.confirmPayment()
+                                
+                                // Chuyển đến màn hình thanh toán thành công
+                                navController.navigate("payment_success/$orderId/$customerName/${totalWithTax.toInt()}")
+                            } catch (e: Exception) {
+                                // Xử lý lỗi nếu có
+                            }
+                        }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                        .height(56.dp),
+                    shape = RoundedCornerShape(8.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Black)
+                ) {
+                    Text(
+                        text = "XÁC NHẬN THANH TOÁN",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                }
+                
+                // Dropdown for payment methods if expanded
                 DropdownMenu(
                     expanded = isPaymentDropdownExpanded,
                     onDismissRequest = { cartViewModel.dismissPaymentDropdown() },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 32.dp)
+                        .background(Color.White)
                 ) {
                     paymentMethods.forEach { method ->
                         DropdownMenuItem(
@@ -128,160 +347,122 @@ fun CartScreen(
                         )
                     }
                 }
-
-                // Nút xác nhận thanh toán
-                Button(
-                    onClick = {
-                        cartViewModel.confirmPayment()
-                        navController.popBackStack()
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(50.dp),
-                    shape = RoundedCornerShape(8.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50))
-                ) {
-                    Text("Xác nhận thanh toán", color = Color.White, fontSize = 16.sp)
-                }
-            }
-        }
-    ) { padding ->
-        if (cartItems.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("Giỏ hàng trống", fontSize = 20.sp, color = Color.Gray)
-            }
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .padding(horizontal = 16.dp)
-            ) {
-                items(cartItems) { cartItem ->
-                    CartItemRow(cartItem = cartItem)
-                }
             }
         }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CartItemRow(cartItem: CartItem) {
+fun EmptyCartView(navController: NavController) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Image(
+                painter = painterResource(id = R.drawable.placeholder), // Thay bằng hình ảnh phù hợp
+                contentDescription = "Empty Cart",
+                modifier = Modifier
+                    .size(120.dp)
+                    .padding(bottom = 16.dp)
+            )
+            
+            Text(
+                text = "Giỏ hàng của bạn đang trống",
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.Black,
+                textAlign = TextAlign.Center
+            )
+            
+            Text(
+                text = "Hãy thêm món ăn vào giỏ hàng trước khi thanh toán",
+                fontSize = 16.sp,
+                color = Color.Gray,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(vertical = 8.dp)
+            )
+            
+            Button(
+                onClick = { navController.navigate("menu") },
+                modifier = Modifier
+                    .padding(top = 16.dp)
+                    .height(48.dp),
+                shape = RoundedCornerShape(24.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color.Black)
+            ) {
+                Text(
+                    text = "Xem thực đơn",
+                    fontSize = 16.sp,
+                    color = Color.White
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun PaymentCartItemRow(cartItem: CartItem) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp),
         shape = RoundedCornerShape(8.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(8.dp),
+                .padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Hình ảnh món ăn
             Image(
-                painter = painterResource(id = getImageResId(cartItem.menuItem.image)),
+                painter = painterResource(
+                    id = DrawableResourceUtils.getDrawableResourceId(cartItem.menuItem.image) ?: R.drawable.placeholder
+                ),
                 contentDescription = cartItem.menuItem.name,
                 modifier = Modifier
-                    .size(80.dp)
-                    .clip(RoundedCornerShape(8.dp)),
+                    .size(60.dp)
+                    .clip(RoundedCornerShape(6.dp)),
                 contentScale = ContentScale.Crop
             )
-            Spacer(modifier = Modifier.width(16.dp))
-
+            
+            Spacer(modifier = Modifier.width(12.dp))
+            
             // Thông tin món ăn
             Column(
                 modifier = Modifier.weight(1f)
             ) {
                 Text(
                     text = cartItem.menuItem.name,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black
                 )
                 Text(
-                    text = "Giá: ${cartItem.menuItem.price.toInt()} VNĐ",
-                    style = MaterialTheme.typography.bodyMedium,
+                    text = "Mô tả",
+                    fontSize = 14.sp,
                     color = Color.Gray
                 )
                 Text(
-                    text = "Số lượng: ${cartItem.quantity}",
-                    style = MaterialTheme.typography.bodyMedium,
+                    text = "Số Lượng: ${cartItem.quantity}",
+                    fontSize = 14.sp,
                     color = Color.Gray
                 )
             }
-
-            // Tổng tiền cho món này
+            
+            // Giá
             Text(
-                text = "${(cartItem.menuItem.price * cartItem.quantity).toInt()} VNĐ",
-                style = MaterialTheme.typography.titleMedium,
+                text = "${(cartItem.menuItem.price).toInt()} VNĐ",
+                fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(end = 8.dp)
+                color = Color.Black
             )
         }
     }
 }
 
-@Composable
-fun getImageResId(imageName: String): Int {
-    val context = LocalContext.current
-    val resId = context.resources.getIdentifier(imageName, "drawable", context.packageName)
-    return if (resId != 0) resId else R.drawable.placeholder
-}
-
-@Preview(showBackground = true)
-@Composable
-fun PreviewCartScreen() {
-    val mockCartItems = listOf(
-        CartItem(MenuItem("1", "Nước ép lê", 50000.0, 1, 0, true, "nuoceple", ""), 2),
-        CartItem(MenuItem("2", "Nước ép dâu", 55000.0, 2, 0, true, "nuocepdau", ""), 1)
-    )
-
-    val mockCartViewModel = object : CartViewModel(FakeCartItemDao()) {
-        override val cartItems: StateFlow<List<CartItem>>
-            get() = MutableStateFlow(mockCartItems)
-
-        override val total: StateFlow<Double>
-            get() = MutableStateFlow(mockCartItems.sumOf { it.menuItem.price * it.quantity })
-
-        override val tax: StateFlow<Double>
-            get() = MutableStateFlow(total.value * 0.1)
-
-        override val totalWithTax: StateFlow<Double>
-            get() = MutableStateFlow(total.value * 1.1)
-
-        override val selectedPayment: StateFlow<String>
-            get() = MutableStateFlow("Tiền mặt")
-
-        override val paymentMethods: StateFlow<List<String>>
-            get() = MutableStateFlow(listOf("Tiền mặt", "Thẻ tín dụng", "Ví điện tử"))
-
-        override val isPaymentDropdownExpanded: StateFlow<Boolean>
-            get() = MutableStateFlow(false)
-
-//        override fun confirmPayment() {
-//            // Không cần thực hiện trong Preview
-//        }
-    }
-
-    CartScreen(
-        navController = rememberNavController(),
-        cartViewModel = mockCartViewModel
-    )
-}
-
-// Fake DAO cho Preview
-class FakeCartItemDao : CartItemDao {
-    override fun getAllCartItems(): Flow<List<CartItemEntity>> = flowOf(emptyList())
-    override suspend fun insertCartItem(cartItem: CartItemEntity) {}
-    override suspend fun updateCartItem(cartItem: CartItemEntity) {}
-    override suspend fun deleteCartItem(cartItem: CartItemEntity) {}
-    override suspend fun clearCart() {}
-}

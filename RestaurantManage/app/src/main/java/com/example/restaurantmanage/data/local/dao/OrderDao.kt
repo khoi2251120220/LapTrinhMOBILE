@@ -19,7 +19,7 @@ interface OrderDao {
     fun getOrdersByStatus(status: String): Flow<List<OrderEntity>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertOrder(order: OrderEntity)
+    suspend fun insertOrder(order: OrderEntity): Long
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertOrders(orders: List<OrderEntity>)
@@ -29,4 +29,7 @@ interface OrderDao {
 
     @Delete
     suspend fun deleteOrder(order: OrderEntity)
+    
+    @Query("SELECT * FROM orders ORDER BY id DESC LIMIT 1")
+    suspend fun getLastInsertedOrder(): OrderEntity?
 } 

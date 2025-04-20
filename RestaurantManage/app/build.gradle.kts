@@ -45,6 +45,7 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.7.0")
 
     // Cập nhật Firebase BOM với phiên bản ổn định
     implementation(platform("com.google.firebase:firebase-bom:32.7.2"))

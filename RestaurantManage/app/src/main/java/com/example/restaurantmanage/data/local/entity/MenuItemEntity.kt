@@ -26,7 +26,7 @@ data class MenuItemEntity(
 )
 
 val menuItems = listOf(
-    MenuItemEntity(id = "1", name = "Tôm xào chua ngọt", price = 150000.0, categoryId = 1, orderCount = 120, inStock = true, image = "food1", description = "Tôm xào với nước sốt chua ngọt."),
+    MenuItemEntity(id = "1", name = "Tôm xào chua ngọt", price = 150000.0, categoryId = 1, orderCount = 320, inStock = true, image = "food1", description = "Tôm xào với nước sốt chua ngọt."),
     MenuItemEntity(id = "2", name = "Cá hồi nướng", price = 180000.0, categoryId = 1, orderCount = 98, inStock = true, image = "food2", description = "Cá hồi nướng tươi ngon."),
     MenuItemEntity(id = "3", name = "Bò xào nấm", price = 160000.0, categoryId = 1, orderCount = 75, inStock = true, image = "placeholder_food", description = "Bò xào với nấm và rau củ."),
     MenuItemEntity(id = "4", name = "Bánh flan", price = 25000.0, categoryId = 1, orderCount = 150, inStock = true, image = "food1", description = "Bánh flan mềm mịn, thơm ngon."),

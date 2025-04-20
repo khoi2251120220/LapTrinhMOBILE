@@ -16,14 +16,17 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.restaurantmanage.viewmodels.DashboardViewModel
+import com.example.restaurantmanage.viewmodels.DashboardViewModelFactory
 import com.example.restaurantmanage.ui.theme.components.AdminAppBar
 import com.example.restaurantmanage.ui.theme.components.NavAdmin
 import com.example.restaurantmanage.ui.theme.RestaurantManageTheme
@@ -33,7 +36,11 @@ import java.util.Locale
 
 @Composable
 fun DashboardScreen(navController: NavController) {
-    val viewModel = DashboardViewModel()
+    val context = LocalContext.current
+    val viewModel: DashboardViewModel = viewModel(
+        factory = DashboardViewModelFactory(context.applicationContext as android.app.Application)
+    )
+    
     val revenueData by viewModel.data
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
@@ -90,14 +97,14 @@ fun DashboardScreen(navController: NavController) {
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
-                                text = "$${String.format(Locale.US, "%,.2f", revenueData.totalRevenue)}",
+                                text = "${String.format(Locale.US, "%,.1f", revenueData.totalRevenue / 1000000)} Triệu",
                                 fontSize = 24.sp,
                                 fontWeight = FontWeight.Bold
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                text = "+${revenueData.revenueGrowth}% so với tháng trước",
-                                color = SuccessColor,
+                                text = if (revenueData.revenueGrowth > 0) "+${revenueData.revenueGrowth}% so với tháng trước" else "${revenueData.revenueGrowth}% so với tháng trước",
+                                color = if (revenueData.revenueGrowth >= 0) SuccessColor else Color.Red,
                                 fontSize = 12.sp
                             )
                         }
@@ -124,14 +131,14 @@ fun DashboardScreen(navController: NavController) {
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
-                                text = String.format(Locale.US, "%,d", revenueData.profit),
+                                text = "${String.format(Locale.US, "%,.1f", revenueData.profit / 1000000.0)} Triệu",
                                 fontSize = 24.sp,
                                 fontWeight = FontWeight.Bold
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                text = "+${revenueData.profitGrowth}% so với tháng trước",
-                                color = SuccessColor,
+                                text = if (revenueData.profitGrowth > 0) "+${revenueData.profitGrowth}% so với tháng trước" else "${revenueData.profitGrowth}% so với tháng trước",
+                                color = if (revenueData.profitGrowth >= 0) SuccessColor else Color.Red,
                                 fontSize = 12.sp
                             )
                         }
@@ -159,7 +166,7 @@ fun DashboardScreen(navController: NavController) {
                             .padding(16.dp)
                     ) {
                         Text(
-                            text = "Biểu đồ doanh thu",
+                            text = "Biểu đồ doanh thu (7 ngày gần nhất)",
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Medium
                         )
@@ -189,11 +196,13 @@ fun DashboardScreen(navController: NavController) {
                                     strokeWidth = 1f
                                 )
                                 
-                                // Vẽ giá trị tiền tương ứng trên trục Y
+                                // Vẽ giá trị tiền tương ứng trên trục Y theo đơn vị triệu
                                 val value = maxRevenue - (i * (maxRevenue - minRevenue) / gridLines)
+                                val valueInMillions = value / 1000000
+                                
                                 drawContext.canvas.nativeCanvas.apply {
                                     drawText(
-                                        "$${String.format(Locale.US, "%.0fK", value / 1000)}",
+                                        String.format(Locale.US, "%.1fM", valueInMillions),
                                         10f,
                                         y + 10,
                                         android.graphics.Paint().apply {
@@ -212,59 +221,90 @@ fun DashboardScreen(navController: NavController) {
                                 size = size.copy(height = height)
                             )
 
-                            // Vẽ đường biểu đồ
-                            val path = Path()
-                            dailyRevenue.forEachIndexed { index, (day, revenue) ->
-                                val x = index * pointSpacing
-                                val normalizedRevenue = if (range == 0.0) 0.0 else ((revenue - minRevenue) / range) * (height - 50f)
-                                val y = height - normalizedRevenue
+                            if (dailyRevenue.isNotEmpty()) {
+                                // Vẽ đường biểu đồ
+                                val path = Path()
+                                dailyRevenue.forEachIndexed { index, (day, revenue) ->
+                                    val x = index * pointSpacing
+                                    val normalizedRevenue = if (range == 0.0) 0.0 else ((revenue - minRevenue) / range) * (height - 50f)
+                                    val y = height - normalizedRevenue
 
-                                if (index == 0) {
-                                    path.moveTo(x, y.toFloat())
-                                } else {
-                                    path.lineTo(x, y.toFloat())
+                                    if (index == 0) {
+                                        path.moveTo(x, y.toFloat())
+                                    } else {
+                                        path.lineTo(x, y.toFloat())
+                                    }
+
+                                    drawCircle(
+                                        color = chartColor,
+                                        radius = 5f,
+                                        center = Offset(x, y.toFloat())
+                                    )
+                                    
+                                    // Vẽ số ngày
+                                    drawContext.canvas.nativeCanvas.apply {
+                                        drawText(
+                                            day.toString(),
+                                            x,
+                                            height + 20.dp.toPx(),
+                                            android.graphics.Paint().apply {
+                                                color = android.graphics.Color.BLACK
+                                                textSize = 24f
+                                                textAlign = android.graphics.Paint.Align.CENTER
+                                            }
+                                        )
+                                    }
+                                    
+                                    // Hiển thị giá trị doanh thu theo triệu tại mỗi điểm
+                                    val revenueInMillions = revenue / 1000000
+                                    drawContext.canvas.nativeCanvas.apply {
+                                        drawText(
+                                            String.format(Locale.US, "%.1fM", revenueInMillions),
+                                            x,
+                                            y.toFloat() - 10,
+                                            android.graphics.Paint().apply {
+                                                color = android.graphics.Color.DKGRAY
+                                                textSize = 20f
+                                                textAlign = android.graphics.Paint.Align.CENTER
+                                            }
+                                        )
+                                    }
                                 }
 
-                                drawCircle(
-                                    color = chartColor,
-                                    radius = 5f,
-                                    center = Offset(x, y.toFloat())
-                                )
+                                // Vẽ vùng phía dưới đường biểu đồ
+                                val fillPath = Path().apply {
+                                    addPath(path)
+                                    lineTo(width, height)
+                                    lineTo(0f, height)
+                                    close()
+                                }
                                 
-                                // Vẽ số ngày
+                                drawPath(
+                                    fillPath,
+                                    chartColor.copy(alpha = 0.1f)
+                                )
+
+                                // Vẽ đường biểu đồ
+                                drawPath(
+                                    path,
+                                    chartColor,
+                                    style = androidx.compose.ui.graphics.drawscope.Stroke(2f)
+                                )
+                            } else {
+                                // Hiển thị thông báo khi không có dữ liệu
                                 drawContext.canvas.nativeCanvas.apply {
                                     drawText(
-                                        day.toString(),
-                                        x,
-                                        height + 20.dp.toPx(),
+                                        "Không có dữ liệu doanh thu",
+                                        width / 2,
+                                        height / 2,
                                         android.graphics.Paint().apply {
-                                            color = android.graphics.Color.BLACK
-                                            textSize = 24f
+                                            color = android.graphics.Color.GRAY
+                                            textSize = 32f
                                             textAlign = android.graphics.Paint.Align.CENTER
                                         }
                                     )
                                 }
                             }
-
-                            // Vẽ vùng phía dưới đường biểu đồ
-                            val fillPath = Path().apply {
-                                addPath(path)
-                                lineTo(width, height)
-                                lineTo(0f, height)
-                                close()
-                            }
-                            
-                            drawPath(
-                                fillPath,
-                                chartColor.copy(alpha = 0.1f)
-                            )
-
-                            // Vẽ đường biểu đồ
-                            drawPath(
-                                path,
-                                chartColor,
-                                style = androidx.compose.ui.graphics.drawscope.Stroke(2f)
-                            )
                         }
                     }
                 }
@@ -289,40 +329,56 @@ fun DashboardScreen(navController: NavController) {
                             fontWeight = FontWeight.Medium
                         )
                         Spacer(modifier = Modifier.height(8.dp))
-                        LazyColumn(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(200.dp)
-                        ) {
-                            items(revenueData.loyalCustomers) { customer ->
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 4.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Box(
+                        
+                        if (revenueData.loyalCustomers.isNotEmpty()) {
+                            LazyColumn(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(200.dp)
+                            ) {
+                                items(revenueData.loyalCustomers) { customer ->
+                                    Row(
                                         modifier = Modifier
-                                            .size(40.dp)
-                                            .background(Color.Gray, shape = RoundedCornerShape(50)),
-                                        contentAlignment = Alignment.Center
+                                            .fillMaxWidth()
+                                            .padding(vertical = 8.dp),
+                                        verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Text(text = customer[0].toString(), color = Color.White)
-                                    }
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Column {
-                                        Text(
-                                            text = customer,
-                                            fontSize = 14.sp,
-                                            fontWeight = FontWeight.Medium
-                                        )
-                                        Text(
-                                            text = "${customer.lowercase(Locale.ROOT)}@gmail.com",
-                                            fontSize = 12.sp,
-                                            color = TextColor
-                                        )
+                                        Box(
+                                            modifier = Modifier
+                                                .size(40.dp)
+                                                .background(Color.Gray, shape = RoundedCornerShape(50)),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Text(
+                                                text = customer.firstOrNull()?.toString() ?: "?", 
+                                                color = Color.White,
+                                                fontSize = 16.sp,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
+                                        Spacer(modifier = Modifier.width(12.dp))
+                                        Column {
+                                            Text(
+                                                text = customer,
+                                                fontSize = 16.sp,
+                                                fontWeight = FontWeight.Medium
+                                            )
+                                        }
                                     }
                                 }
+                            }
+                        } else {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(200.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = "Chưa có khách hàng",
+                                    fontSize = 16.sp,
+                                    color = Color.Gray
+                                )
                             }
                         }
                     }
