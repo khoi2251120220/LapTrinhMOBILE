@@ -3,13 +3,22 @@ package com.example.restaurantmanage.viewmodels
 import android.content.Context
 import android.util.Log
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
+import com.example.restaurantmanage.data.local.RestaurantDatabase
+import com.example.restaurantmanage.data.local.dao.UserDao
+import com.example.restaurantmanage.data.local.entity.UserEntity
 import com.example.restaurantmanage.data.models.UserProfile
 import com.google.android.gms.auth.api.identity.Identity
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 
-class ProfileViewModel : ViewModel() {
+class ProfileViewModel(
+    private val userDao: UserDao
+) : ViewModel() {
     private val _userProfile = MutableStateFlow(UserProfile())
     val userProfile: StateFlow<UserProfile> = _userProfile
 
@@ -28,21 +37,55 @@ class ProfileViewModel : ViewModel() {
         loadUserProfile()
     }
 
-    fun loadUserProfile() {
+    private fun loadUserProfile() {
         _isLoading.value = true
         val user = auth.currentUser
         if (user != null) {
+            val userId = user.uid
             val email = user.email ?: ""
             val role = if (email == "admin@gmail.com") "admin" else "user"
-            _userProfile.value = UserProfile(
-                name = user.displayName ?: "",
-                email = email,
-                phone = _userProfile.value.phone, // Giữ dữ liệu tạm thời
-                address = _userProfile.value.address,
-                favoriteItems = _userProfile.value.favoriteItems,
-                role = role
-            )
-            _isLoading.value = false
+            
+            // Tìm user trong cơ sở dữ liệu Room
+            viewModelScope.launch {
+                try {
+                    val userEntity = userDao.getUserById(userId).first()
+                    if (userEntity != null) {
+                        // Nếu đã có trong DB, dùng dữ liệu từ DB
+                        _userProfile.value = UserProfile(
+                            name = userEntity.name,
+                            email = userEntity.email,
+                            phone = userEntity.phone,
+                            favoriteItems = emptyList(),
+                            role = userEntity.role
+                        )
+                    } else {
+                        // Nếu chưa có, tạo mới với thông tin từ Firebase
+                        _userProfile.value = UserProfile(
+                            name = user.displayName ?: "",
+                            email = email,
+                            phone = "",
+                            favoriteItems = emptyList(),
+                            role = role
+                        )
+                        
+                        // Lưu vào Room DB
+                        userDao.insertUser(
+                            UserEntity(
+                                userId = userId,
+                                name = user.displayName ?: "",
+                                email = email,
+                                phone = "",
+                                role = role
+                            )
+                        )
+                    }
+                } catch (e: Exception) {
+                    _errorMessage.value = "Lỗi khi tải thông tin người dùng: ${e.message}"
+                    Log.e("ProfileViewModel", "Error loading user profile", e)
+                } finally {
+                    _isLoading.value = false
+                }
+            }
         } else {
             _errorMessage.value = "Vui lòng đăng nhập lại"
             _isLoading.value = false
@@ -51,24 +94,40 @@ class ProfileViewModel : ViewModel() {
 
     fun updateProfile(
         name: String = _userProfile.value.name,
-        email: String = _userProfile.value.email,
-        phone: String = _userProfile.value.phone,
-        address: String = _userProfile.value.address,
-        favoriteItems: List<String> = _userProfile.value.favoriteItems,
-        role: String = _userProfile.value.role
+        phone: String = _userProfile.value.phone
     ) {
-        _userProfile.value = UserProfile(name, email, phone, address, favoriteItems, role)
-        _isSaved.value = false
-    }
-
-    fun saveProfile() {
         _isLoading.value = true
         val user = auth.currentUser
         if (user != null) {
-            // Không lưu vào Firestore, chỉ cập nhật tạm thời
-            _isSaved.value = true
-            _isLoading.value = false
-            Log.d("ProfileViewModel", "Đã lưu tạm thời: ${_userProfile.value}")
+            val userId = user.uid
+            
+            viewModelScope.launch {
+                try {
+                    // Cập nhật user profile trong memory
+                    _userProfile.value = _userProfile.value.copy(
+                        name = name,
+                        phone = phone
+                    )
+                    
+                    // Lưu vào Room Database
+                    val userEntity = UserEntity(
+                        userId = userId,
+                        name = name,
+                        email = _userProfile.value.email,
+                        phone = phone,
+                        role = _userProfile.value.role
+                    )
+                    userDao.updateUser(userEntity)
+                    
+                    _isSaved.value = true
+                    Log.d("ProfileViewModel", "Đã lưu thông tin người dùng vào Room DB: $userEntity")
+                } catch (e: Exception) {
+                    _errorMessage.value = "Lỗi khi cập nhật thông tin: ${e.message}"
+                    Log.e("ProfileViewModel", "Error updating user profile", e)
+                } finally {
+                    _isLoading.value = false
+                }
+            }
         } else {
             _errorMessage.value = "Vui lòng đăng nhập lại"
             _isLoading.value = false
@@ -100,5 +159,15 @@ class ProfileViewModel : ViewModel() {
 
     fun clearError() {
         _errorMessage.value = ""
+    }
+    
+    class Factory(private val database: RestaurantDatabase) : ViewModelProvider.Factory {
+        @Suppress("UNCHECKED_CAST")
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            if (modelClass.isAssignableFrom(ProfileViewModel::class.java)) {
+                return ProfileViewModel(database.userDao()) as T
+            }
+            throw IllegalArgumentException("Unknown ViewModel class")
+        }
     }
 }

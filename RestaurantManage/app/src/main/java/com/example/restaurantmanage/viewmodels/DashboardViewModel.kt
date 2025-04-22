@@ -50,7 +50,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
                 // Tính tốc độ tăng trưởng doanh thu
                 val revenueGrowth = calculateRevenueGrowth(allOrders)
                 
-                // Tính lợi nhuận (giả sử chi phí là 30% doanh thu)
+                // Tính lợi nhuận (giả sử chi phí là 30% doanh thu(nhan vien, mat bang blabla,...)
                 val profit = (totalRevenue * 0.7).toInt()
                 
                 // Tính tốc độ tăng trưởng lợi nhuận

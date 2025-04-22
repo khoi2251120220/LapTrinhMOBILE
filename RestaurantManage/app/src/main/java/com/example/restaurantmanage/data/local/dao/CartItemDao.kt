@@ -19,8 +19,14 @@ interface CartItemDao {
     @Update
     suspend fun updateCartItem(cartItem: CartItemEntity)
 
+    @Query("SELECT * FROM cart_items WHERE menuItemId = :menuItemId")
+    suspend fun getCartItemsByMenuId(menuItemId: String): List<CartItemEntity>
+
     @Query("DELETE FROM cart_items WHERE menuItemId = :menuItemId")
-    suspend fun deleteCartItem(menuItemId: String)
+    suspend fun deleteCartItemByMenuId(menuItemId: String)
+
+    @Delete
+    suspend fun deleteCartItem(cartItem: CartItemEntity)
 
     @Query("DELETE FROM cart_items")
     suspend fun clearCart()

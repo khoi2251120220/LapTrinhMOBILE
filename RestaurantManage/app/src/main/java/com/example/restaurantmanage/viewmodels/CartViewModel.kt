@@ -73,7 +73,19 @@ open class CartViewModel(
             cartItemDao.getAllCartItems()
                 .collect { entities -> 
                     val items = entities.map { entity -> entity.toCartItem() }
-                    _cartItems.value = items
+                    
+                    // Nhóm các mục giống nhau lại với nhau
+                    val groupedItems = items.groupBy { item -> item.menuItem.id }
+                        .map { (_, itemsForId) ->
+                            // Tổng hợp số lượng cho cùng một sản phẩm
+                            val totalQuantity = itemsForId.sumOf { it.quantity }
+                            // Sử dụng ghi chú từ mục đầu tiên
+                            val firstItem = itemsForId.first()
+                            // Tạo CartItem mới với tổng số lượng
+                            CartItem(firstItem.menuItem, totalQuantity, firstItem.notes)
+                        }
+                    
+                    _cartItems.value = groupedItems
                     updateTotal()
                 }
         }
@@ -90,15 +102,34 @@ open class CartViewModel(
         viewModelScope.launch {
             val currentItems = _cartItems.value.toMutableList()
             val existingItem = currentItems.find { it.menuItem.id == item.id }
+            
             if (existingItem != null) {
+                // Cập nhật số lượng nếu món ăn đã tồn tại trong giỏ hàng
                 val updatedItem = existingItem.copy(quantity = existingItem.quantity + 1)
                 currentItems[currentItems.indexOf(existingItem)] = updatedItem
-                cartItemDao.updateCartItem(updatedItem.toCartItemEntity())
+                
+                // Cập nhật trong database
+                val existingEntities = cartItemDao.getCartItemsByMenuId(item.id)
+                if (existingEntities.isNotEmpty()) {
+                    // Cập nhật mục đầu tiên trong database
+                    val firstEntity = existingEntities.first()
+                    val updatedEntity = firstEntity.copy(quantity = firstEntity.quantity + 1)
+                    cartItemDao.updateCartItem(updatedEntity)
+                    
+                    // Xóa các mục trùng lặp khác (nếu có)
+                    if (existingEntities.size > 1) {
+                        existingEntities.drop(1).forEach { entity ->
+                            cartItemDao.deleteCartItem(entity)
+                        }
+                    }
+                }
             } else {
+                // Thêm món ăn mới vào giỏ hàng
                 val newCartItem = CartItem(item, 1)
                 currentItems.add(newCartItem)
                 cartItemDao.insertCartItem(newCartItem.toCartItemEntity())
             }
+            
             _cartItems.value = currentItems
             updateTotal()
         }
@@ -121,6 +152,52 @@ open class CartViewModel(
             cartItemDao.clearCart()
             _cartItems.value = emptyList()
             updateTotal()
+        }
+    }
+
+    // Xóa hoàn toàn một sản phẩm khỏi giỏ hàng
+    fun removeFromCart(cartItem: CartItem) {
+        viewModelScope.launch {
+            // Xóa sản phẩm khỏi database
+            cartItemDao.deleteCartItemByMenuId(cartItem.menuItem.id)
+            
+            // Cập nhật state
+            val updatedItems = _cartItems.value.toMutableList()
+            updatedItems.removeAll { it.menuItem.id == cartItem.menuItem.id }
+            _cartItems.value = updatedItems
+            
+            updateTotal()
+        }
+    }
+    
+    // Giảm số lượng sản phẩm trong giỏ hàng đi 1
+    fun decreaseQuantity(cartItem: CartItem) {
+        viewModelScope.launch {
+            val currentItems = _cartItems.value.toMutableList()
+            val existingItem = currentItems.find { it.menuItem.id == cartItem.menuItem.id }
+            
+            if (existingItem != null) {
+                if (existingItem.quantity > 1) {
+                    // Giảm số lượng đi 1
+                    val updatedItem = existingItem.copy(quantity = existingItem.quantity - 1)
+                    currentItems[currentItems.indexOf(existingItem)] = updatedItem
+                    
+                    // Cập nhật trong database
+                    val existingEntities = cartItemDao.getCartItemsByMenuId(cartItem.menuItem.id)
+                    if (existingEntities.isNotEmpty()) {
+                        val firstEntity = existingEntities.first()
+                        val updatedEntity = firstEntity.copy(quantity = firstEntity.quantity - 1)
+                        cartItemDao.updateCartItem(updatedEntity)
+                    }
+                    
+                    _cartItems.value = currentItems
+                } else {
+                    // Nếu số lượng là 1, xóa sản phẩm khỏi giỏ hàng
+                    removeFromCart(cartItem)
+                }
+                
+                updateTotal()
+            }
         }
     }
 }

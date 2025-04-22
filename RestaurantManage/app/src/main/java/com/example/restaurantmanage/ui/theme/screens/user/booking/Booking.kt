@@ -1,5 +1,6 @@
 package com.example.restaurantmanage.ui.theme.screens.user.booking
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -15,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -24,8 +26,6 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.layout.ContentScale
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import coil.compose.AsyncImage
-import coil.request.ImageRequest
 import com.example.restaurantmanage.R
 import com.example.restaurantmanage.data.local.RestaurantDatabase
 import com.example.restaurantmanage.data.local.entity.TableEntity
@@ -243,6 +243,14 @@ fun TableCard(
     table: TableEntity,
     onClick: () -> Unit
 ) {
+    // Determine the image resource based on table capacity
+    val imageRes = when {
+        table.capacity <= 2 -> R.drawable.table_2_seats
+        table.capacity <= 4 -> R.drawable.table_4_seats
+        table.capacity <= 6 -> R.drawable.table_6_seats
+        else -> R.drawable.table_10_seats
+    }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -255,12 +263,9 @@ fun TableCard(
             modifier = Modifier
                 .fillMaxWidth()
         ) {
-            // Image section
-            AsyncImage(
-                model = ImageRequest.Builder(LocalContext.current)
-                    .data(table.image.ifEmpty { R.drawable.table_image })
-                    .crossfade(true)
-                    .build(),
+            // Image section with proper table image based on capacity
+            Image(
+                painter = painterResource(id = imageRes),
                 contentDescription = "Bàn ${table.name}",
                 contentScale = ContentScale.Crop,
                 modifier = Modifier

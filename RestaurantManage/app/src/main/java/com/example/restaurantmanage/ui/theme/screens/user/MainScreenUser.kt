@@ -63,7 +63,9 @@ fun MainScreenUser() {
     )
     
     // Khởi tạo ProfileViewModel
-    val profileViewModel: ProfileViewModel = viewModel()
+    val profileViewModel: ProfileViewModel = viewModel(
+        factory = ProfileViewModel.Factory(RestaurantDatabase.getDatabase(LocalContext.current))
+    )
 
     Scaffold(
         bottomBar = {
@@ -99,7 +101,10 @@ fun MainScreenUser() {
                 )
             }
             composable("profile") {
-                ProfileScreen()
+                ProfileScreen(
+                    viewModel = profileViewModel,
+                    orderViewModel = orderViewModel
+                )
             }
             composable("login_screen") {
                 LoginScreen(navController)

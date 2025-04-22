@@ -118,7 +118,7 @@ fun UserManagementScreen(navController: NavController) {
         
         // Dialog đổi vai trò
         if (showChangeRoleDialog && selectedUser != null) {
-            val roles = listOf("ADMIN", "STAFF", "CUSTOMER")
+            val roles = listOf("ADMIN", "USER")
             var selectedRole by remember { mutableStateOf(selectedUser?.role ?: "CUSTOMER") }
             
             AlertDialog(
@@ -265,6 +265,7 @@ fun UserCard(
                 .fillMaxWidth()
                 .padding(16.dp)
         ) {
+            // Header với tên người dùng và trạng thái
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -272,9 +273,11 @@ fun UserCard(
             ) {
                 Text(
                     text = user.name,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.weight(1f)
                 )
+                Spacer(modifier = Modifier.width(8.dp))
                 Box(
                     modifier = Modifier
                         .background(
@@ -287,70 +290,84 @@ fun UserCard(
                     Text(
                         text = user.status,
                         color = Color.White,
-                        fontSize = 12.sp
-                    )
-                }
-            }
-            
-            Spacer(modifier = Modifier.height(8.dp))
-            
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Column {
-                    Text(
-                        text = "Email: ${user.email}",
-                        fontSize = 14.sp,
-                        color = TextColor
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "SĐT: ${user.phone}",
-                        fontSize = 14.sp,
-                        color = TextColor
-                    )
-                }
-                Column(horizontalAlignment = Alignment.End) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.clickable { onEditRole() }
-                    ) {
-                        Text(
-                            text = "Vai trò: ${user.role}",
-                            fontSize = 14.sp,
-                            color = TextColor
-                        )
-                        Icon(
-                            imageVector = Icons.Default.Edit,
-                            contentDescription = "Sửa vai trò",
-                            modifier = Modifier.size(16.dp),
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "Đăng nhập: ${user.lastLogin}",
                         fontSize = 12.sp,
-                        color = TextColor
+                        fontWeight = FontWeight.Medium
                     )
                 }
             }
             
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(16.dp))
             
+            // Thông tin chi tiết - tất cả trong một cột
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                // Email
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = "Email: ",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = TextColor
+                    )
+                    Text(
+                        text = user.email,
+                        fontSize = 14.sp,
+                        color = TextColor
+                    )
+                }
+                
+                //role
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .clickable { onEditRole() }
+                        .padding(vertical = 4.dp)
+                ) {
+                    Text(
+                        text = "Vai trò: ",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = TextColor
+                    )
+                    Text(
+                        text = user.role,
+                        fontSize = 14.sp,
+                        color = TextColor,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = "Sửa vai trò",
+                        modifier = Modifier.size(16.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+            
+            Spacer(modifier = Modifier.height(12.dp))
+            
+            // Nút xóa
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.End
             ) {
                 IconButton(
                     onClick = onDelete,
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier
+                        .size(36.dp)
+                        .background(
+                            color = Color(0xFFFFEBEE),
+                            shape = RoundedCornerShape(4.dp)
+                        )
                 ) {
                     Icon(
                         imageVector = Icons.Default.Delete,
                         contentDescription = "Xóa",
-                        tint = DangerColor
+                        tint = DangerColor,
+                        modifier = Modifier.size(20.dp)
                     )
                 }
             }

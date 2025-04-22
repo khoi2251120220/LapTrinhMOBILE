@@ -36,7 +36,9 @@ import java.util.*
 
 @Composable
 fun ProfileScreen(
-    viewModel: ProfileViewModel = viewModel(),
+    viewModel: ProfileViewModel = viewModel(
+        factory = ProfileViewModel.Factory(RestaurantDatabase.getDatabase(LocalContext.current))
+    ),
     orderViewModel: OrderViewModel = viewModel(
         factory = OrderViewModelFactory(RestaurantDatabase.getDatabase(LocalContext.current))
     ),
@@ -58,7 +60,6 @@ fun ProfileScreen(
     var name by remember { mutableStateOf(userProfile.name) }
     var email by remember { mutableStateOf(userProfile.email) }
     var phone by remember { mutableStateOf(userProfile.phone) }
-    var address by remember { mutableStateOf(userProfile.address) }
     var isEditing by remember { mutableStateOf(false) }
     
     // Lấy ID của người dùng hiện tại
@@ -77,7 +78,6 @@ fun ProfileScreen(
         name = userProfile.name
         email = userProfile.email
         phone = userProfile.phone
-        address = userProfile.address
     }
 
     // Reset trạng thái lưu sau 2 giây
@@ -509,7 +509,16 @@ fun BookingHistoryItem(
 @Preview(showBackground = true)
 @Composable
 fun ProfileScreenPreview() {
+    // Profile Screen Preview không khả dụng do phần phụ thuộc
+    // Vì ProfileViewModel cần UserDao nên không thể xem trước trực tiếp
     MaterialTheme {
-        ProfileScreen()
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text("Không thể xem trước màn hình hồ sơ do phụ thuộc vào cơ sở dữ liệu")
+        }
     }
 }

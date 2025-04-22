@@ -21,7 +21,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -29,8 +28,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -59,7 +56,6 @@ import java.util.Locale
 import android.util.Log
 import com.example.restaurantmanage.data.local.entity.MenuItemEntity
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     navController: NavController,
@@ -89,8 +85,7 @@ fun HomeScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = {
+
                     OutlinedTextField(
                         value = searchText.value,
                         onValueChange = {
@@ -100,7 +95,7 @@ fun HomeScreen(
                         placeholder = { Text("Tìm kiếm món ăn") },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp),
+                            .padding(16.dp),
                         singleLine = true,
                         leadingIcon = {
                             Icon(
@@ -116,11 +111,8 @@ fun HomeScreen(
                             unfocusedIndicatorColor = Color.Gray
                         )
                     )
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.White
-                )
-            )
+
+
         }
     ) { padding ->
         LazyColumn(

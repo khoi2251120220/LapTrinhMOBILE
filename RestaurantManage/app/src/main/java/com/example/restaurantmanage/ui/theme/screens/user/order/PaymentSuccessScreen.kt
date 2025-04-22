@@ -86,7 +86,7 @@ fun PaymentSuccessScreen(
                         color = Color.Gray
                     )
                     Text(
-                        text = orderId, // Dữ liệu động
+                        text = "Đơn hàng #${orderId}", // Thêm tiền tố cho rõ ràng
                         fontSize = 16.sp,
                         color = Color.Black,
                         fontWeight = FontWeight.Medium

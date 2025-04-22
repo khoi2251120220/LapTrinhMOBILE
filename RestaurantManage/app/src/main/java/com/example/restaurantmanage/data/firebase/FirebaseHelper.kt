@@ -32,7 +32,6 @@ class FirebaseHelper {
                 val role = document.getString("role") ?: "CUSTOMER"
                 val status = document.getString("status") ?: "ACTIVE"
                 val createdAt = document.getString("createdAt") ?: ""
-                val lastLogin = document.getString("lastLogin") ?: getCurrentDateTime()
 
                 User(
                     id = id,
@@ -41,8 +40,7 @@ class FirebaseHelper {
                     phone = phone,
                     role = role,
                     status = status,
-                    createdAt = createdAt,
-                    lastLogin = lastLogin
+                    createdAt = createdAt
                 )
             }
         } catch (e: Exception) {
@@ -102,8 +100,7 @@ class FirebaseHelper {
                 "phone" to (firebaseUser.phoneNumber ?: ""),
                 "role" to role,
                 "status" to "ACTIVE",
-                "createdAt" to getCurrentDateTime(),
-                "lastLogin" to getCurrentDateTime()
+                "createdAt" to getCurrentDateTime()
             )
             
             usersCollection.document(firebaseUser.uid)
@@ -114,17 +111,6 @@ class FirebaseHelper {
         } catch (e: Exception) {
             Log.e(TAG, "Lỗi khi thiết lập người dùng mới", e)
             false
-        }
-    }
-    
-    // Cập nhật thời gian đăng nhập mới nhất
-    suspend fun updateLastLogin(userId: String) {
-        try {
-            usersCollection.document(userId)
-                .update("lastLogin", getCurrentDateTime())
-                .await()
-        } catch (e: Exception) {
-            Log.e(TAG, "Lỗi khi cập nhật thời gian đăng nhập", e)
         }
     }
     

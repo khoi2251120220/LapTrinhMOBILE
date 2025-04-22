@@ -18,6 +18,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import java.util.Date
 import java.util.UUID
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 class OrderViewModel(
     private val database: RestaurantDatabase,
@@ -44,6 +46,26 @@ class OrderViewModel(
     private val _userOrders = MutableStateFlow<List<OrderEntity>>(emptyList())
     val userOrders: StateFlow<List<OrderEntity>> = _userOrders
 
+    // Biến để lưu trữ số thứ tự đơn hàng hiện tại
+    private val _orderCounter = MutableStateFlow(0)
+    
+    init {
+        // Khởi tạo bộ đếm đơn hàng
+        viewModelScope.launch {
+            orderDao.getAllOrders().collect { orderList ->
+                if (orderList.isNotEmpty()) {
+                    // Tìm số lớn nhất trong các mã đơn hàng hiện có
+                    val maxOrderNumber = orderList.mapNotNull { order -> 
+                        // Trích xuất phần số từ ID đơn hàng
+                        order.id.filter { it.isDigit() }.toIntOrNull()
+                    }.maxOrNull() ?: 0
+                    
+                    _orderCounter.value = maxOrderNumber
+                }
+            }
+        }
+    }
+    
     // This function clashes with the property above, renamed the property
     fun getAllOrders(): Flow<List<OrderEntity>> {
         return orderDao.getAllOrders()
@@ -59,7 +81,12 @@ class OrderViewModel(
             throw IllegalStateException("Không thể tạo đơn hàng với giỏ hàng trống")
         }
         
-        val orderId = UUID.randomUUID().toString()
+        // Tăng bộ đếm đơn hàng
+        _orderCounter.value += 1
+        
+        // Tạo mã đơn hàng với định dạng: số thứ tự
+        val orderNumber = _orderCounter.value
+        val orderId = orderNumber.toString()
         
         // Tạo đơn hàng và thêm các mục
         val order = OrderEntity(
@@ -70,7 +97,7 @@ class OrderViewModel(
             customerPhone = "",
             orderDate = Date(),
             totalAmount = totalAmount,
-            status = "PENDING",
+            status = "COMPLETED",
             paymentMethod = "",
             tableId = null
         )
@@ -97,13 +124,13 @@ class OrderViewModel(
         
         // Clear the cart after creating the order
         cartItems.forEach { cartItem ->
-            cartItemDao.deleteCartItem(cartItem.menuItemId)
+            cartItemDao.deleteCartItemByMenuId(cartItem.menuItemId)
         }
         
         // Cập nhật state
         _currentOrderId.value = orderId
         _customerName.value = customerName
-        _orderStatus.value = "PENDING"
+        _orderStatus.value = "COMPLETED"
         
         return orderId
     }

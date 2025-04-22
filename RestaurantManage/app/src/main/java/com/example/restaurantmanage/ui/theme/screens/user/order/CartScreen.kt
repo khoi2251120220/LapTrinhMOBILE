@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -19,6 +20,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -54,6 +57,7 @@ import com.example.restaurantmanage.util.DrawableResourceUtils
 import com.example.restaurantmanage.viewmodels.CartViewModel
 import com.example.restaurantmanage.viewmodels.CartViewModelFactory
 import com.example.restaurantmanage.viewmodels.OrderViewModel
+import com.example.restaurantmanage.viewmodels.OrderViewModelFactory
 import com.example.restaurantmanage.viewmodels.ProfileViewModel
 import kotlinx.coroutines.launch
 import com.google.firebase.auth.FirebaseAuth
@@ -64,8 +68,12 @@ fun CartScreen(
     cartViewModel: CartViewModel = viewModel(
         factory = CartViewModelFactory(RestaurantDatabase.getDatabase(LocalContext.current))
     ),
-    orderViewModel: OrderViewModel,
-    profileViewModel: ProfileViewModel = viewModel()
+    orderViewModel: OrderViewModel = viewModel(
+        factory = OrderViewModelFactory(RestaurantDatabase.getDatabase(LocalContext.current))
+    ),
+    profileViewModel: ProfileViewModel = viewModel(
+        factory = ProfileViewModel.Factory(RestaurantDatabase.getDatabase(LocalContext.current))
+    )
 ) {
     val cartItems by cartViewModel.cartItems.collectAsState()
     val total by cartViewModel.total.collectAsState()
@@ -84,7 +92,7 @@ fun CartScreen(
     Scaffold(
         topBar = {
             AppBar(
-                title = "THANH TOÁN",
+                title = "Thanh Toán",
                 navController = navController,
                 showBackButton = true
             )
@@ -212,7 +220,7 @@ fun CartScreen(
                         .padding(horizontal = 16.dp)
                 ) {
                     items(cartItems) { cartItem ->
-                        PaymentCartItemRow(cartItem = cartItem)
+                        PaymentCartItemRow(cartItem = cartItem, cartViewModel = cartViewModel)
                     }
                 }
                 
@@ -234,7 +242,7 @@ fun CartScreen(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text(
-                                text = "Tổng cộng (${cartItems.size})",
+                                text = "Tổng cộng (${cartItems.sumOf { it.quantity } } món)",
                                 fontSize = 16.sp,
                                 color = Color.Black
                             )
@@ -415,7 +423,12 @@ fun EmptyCartView(navController: NavController) {
 }
 
 @Composable
-fun PaymentCartItemRow(cartItem: CartItem) {
+fun PaymentCartItemRow(
+    cartItem: CartItem,
+    cartViewModel: CartViewModel = viewModel(
+        factory = CartViewModelFactory(RestaurantDatabase.getDatabase(LocalContext.current))
+    )
+) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -423,54 +436,108 @@ fun PaymentCartItemRow(cartItem: CartItem) {
         shape = RoundedCornerShape(8.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .padding(12.dp)
         ) {
-            Image(
-                painter = painterResource(
-                    id = DrawableResourceUtils.getDrawableResourceId(cartItem.menuItem.image) ?: R.drawable.placeholder
-                ),
-                contentDescription = cartItem.menuItem.name,
-                modifier = Modifier
-                    .size(60.dp)
-                    .clip(RoundedCornerShape(6.dp)),
-                contentScale = ContentScale.Crop
-            )
-            
-            Spacer(modifier = Modifier.width(12.dp))
-            
-            // Thông tin món ăn
-            Column(
-                modifier = Modifier.weight(1f)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
             ) {
+                // Hình ảnh món ăn
+                Image(
+                    painter = painterResource(
+                        id = DrawableResourceUtils.getDrawableResourceId(cartItem.menuItem.image) ?: R.drawable.placeholder
+                    ),
+                    contentDescription = cartItem.menuItem.name,
+                    modifier = Modifier
+                        .size(60.dp)
+                        .clip(RoundedCornerShape(6.dp)),
+                    contentScale = ContentScale.Crop
+                )
+                
+                Spacer(modifier = Modifier.width(12.dp))
+                
+                // Thông tin món ăn
+                Column(
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(
+                        text = cartItem.menuItem.name,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.Black
+                    )
+                    Text(
+                        text = "Mô tả",
+                        fontSize = 14.sp,
+                        color = Color.Gray
+                    )
+                }
+                
+                // Giá
                 Text(
-                    text = cartItem.menuItem.name,
+                    text = "${(cartItem.menuItem.price * cartItem.quantity).toInt()} VNĐ",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.Black
                 )
-                Text(
-                    text = "Mô tả",
-                    fontSize = 14.sp,
-                    color = Color.Gray
-                )
-                Text(
-                    text = "Số Lượng: ${cartItem.quantity}",
-                    fontSize = 14.sp,
-                    color = Color.Gray
-                )
             }
             
-            // Giá
-            Text(
-                text = "${(cartItem.menuItem.price).toInt()} VNĐ",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.Black
-            )
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            // Thêm phần điều chỉnh số lượng và xóa
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+
+                
+                // Phần điều chỉnh số lượng
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Button(
+                        onClick = { cartViewModel.decreaseQuantity(cartItem) },
+                        modifier = Modifier.size(36.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.Gray),
+                        contentPadding = PaddingValues(4.dp),
+                        shape = RoundedCornerShape(4.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Remove,
+                            contentDescription = "Giảm",
+                            tint = Color.White,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                    
+                    Text(
+                        text = "${cartItem.quantity}",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.Black,
+                        modifier = Modifier.padding(horizontal = 16.dp)
+                    )
+                    
+                    Button(
+                        onClick = { cartViewModel.addToCart(cartItem.menuItem) },
+                        modifier = Modifier.size(36.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.Black),
+                        contentPadding = PaddingValues(4.dp),
+                        shape = RoundedCornerShape(4.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "Tăng",
+                            tint = Color.White,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                }
+            }
         }
     }
 }

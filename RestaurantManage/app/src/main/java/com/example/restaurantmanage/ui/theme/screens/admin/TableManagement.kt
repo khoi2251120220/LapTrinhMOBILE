@@ -1,11 +1,8 @@
 package com.example.restaurantmanage.ui.theme.screens.admin
 
-import android.net.Uri
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
+
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -71,8 +68,6 @@ import com.example.restaurantmanage.ui.theme.RestaurantManageTheme
 import com.example.restaurantmanage.ui.theme.components.AdminAppBar
 import com.example.restaurantmanage.ui.theme.components.NavAdmin
 import com.example.restaurantmanage.viewmodels.TableManagementViewModel
-import com.example.restaurantmanage.util.DrawableResourceUtils
-import coil.compose.rememberAsyncImagePainter
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -106,7 +101,7 @@ fun TableManagementScreen(navController: NavController) {
         "Tất cả (${tables.size})",
         "Trống (${availableTables.size})",
         "Đã đặt (${reservedTables.size})",
-        "Đang phục vụ (${occupiedTables.size})"
+
     )
 
     Scaffold(
@@ -211,14 +206,6 @@ fun TableManagementScreen(navController: NavController) {
     if (showAddTableDialog) {
         var tableName by remember { mutableStateOf("") }
         var capacity by remember { mutableStateOf("") }
-        var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
-        
-        // Image picker launcher
-        val imagePickerLauncher = rememberLauncherForActivityResult(
-            contract = ActivityResultContracts.GetContent()
-        ) { uri: Uri? ->
-            selectedImageUri = uri
-        }
 
         AlertDialog(
             onDismissRequest = { showAddTableDialog = false },
@@ -241,64 +228,19 @@ fun TableManagementScreen(navController: NavController) {
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier.fillMaxWidth()
                     )
-                    
-                    Spacer(modifier = Modifier.height(16.dp))
-                    
-                    // Image selection
-                    Text(
-                        text = "Hình ảnh bàn",
-                        fontWeight = FontWeight.Medium,
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
-                    
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(120.dp)
-                            .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(8.dp))
-                            .clip(RoundedCornerShape(8.dp))
-                            .clickable { imagePickerLauncher.launch("image/*") },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        if (selectedImageUri != null) {
-                            Image(
-                                painter = rememberAsyncImagePainter(selectedImageUri),
-                                contentDescription = "Selected Table Image",
-                                modifier = Modifier.fillMaxSize(),
-                                contentScale = ContentScale.Crop
-                            )
-                        } else {
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Add,
-                                    contentDescription = "Add Image",
-                                    tint = MaterialTheme.colorScheme.outline
-                                )
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text(
-                                    text = "Chọn hình ảnh",
-                                    color = MaterialTheme.colorScheme.outline,
-                                    fontSize = 12.sp
-                                )
-                            }
-                        }
-                    }
                 }
             },
             confirmButton = {
                 TextButton(
                     onClick = {
-                        if (tableName.isNotEmpty() && capacity.isNotEmpty() && selectedImageUri != null) {
-                            // Store the selected image and add table with image reference
-                            val imagePathStr = selectedImageUri.toString()
+                        if (tableName.isNotEmpty() && capacity.isNotEmpty()) {
+                            // Automatically determine image based on capacity
+                            val imagePathStr = getTableImageBasedOnCapacity(capacity.toInt())
                             viewModel.addTableWithImage(tableName, capacity.toInt(), imagePathStr)
                             showAddTableDialog = false
                         }
                     },
-                    enabled = tableName.isNotEmpty() && capacity.isNotEmpty() && selectedImageUri != null
+                    enabled = tableName.isNotEmpty() && capacity.isNotEmpty()
                 ) {
                     Text("Thêm")
                 }
@@ -370,6 +312,16 @@ fun TableManagementScreen(navController: NavController) {
     }
 }
 
+// Function to determine table image based on capacity
+private fun getTableImageBasedOnCapacity(capacity: Int): String {
+    return when {
+        capacity <= 2 -> "table_2_seats"
+        capacity <= 4 -> "table_4_seats"
+        capacity <= 6 -> "table_6_seats"
+        else -> "table_10_seats"
+    }
+}
+
 @Composable
 fun TableCard(
     table: TableEntity,
@@ -395,6 +347,14 @@ fun TableCard(
         "OCCUPIED" -> Color(0xFFF44336)
         else -> Color(0xFF4CAF50)
     }
+    
+    // Determine the image resource based on table capacity
+    val imageRes = when {
+        table.capacity <= 2 -> R.drawable.table_2_seats
+        table.capacity <= 4 -> R.drawable.table_4_seats
+        table.capacity <= 6 -> R.drawable.table_6_seats
+        else -> R.drawable.table_10_seats
+    }
 
     Card(
         modifier = Modifier
@@ -408,7 +368,7 @@ fun TableCard(
             modifier = Modifier.padding(12.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Display table image
+            // Display table image based on capacity
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -416,34 +376,12 @@ fun TableCard(
                     .clip(RoundedCornerShape(8.dp)),
                 contentAlignment = Alignment.Center
             ) {
-                if (table.image.isNotEmpty()) {
-                    if (table.image.startsWith("content://") || table.image.startsWith("file://")) {
-                        // Load from URI
-                        Image(
-                            painter = rememberAsyncImagePainter(Uri.parse(table.image)),
-                            contentDescription = table.name,
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop
-                        )
-                    } else {
-                        // Try to load as drawable resource
-                        val imageRes = DrawableResourceUtils.getDrawableResourceId(table.image) ?: R.drawable.table_image
-                        Image(
-                            painter = painterResource(id = imageRes),
-                            contentDescription = table.name,
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop
-                        )
-                    }
-                } else {
-                    // Default placeholder
-                    Image(
-                        painter = painterResource(id = R.drawable.table_image),
-                        contentDescription = table.name,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
-                }
+                Image(
+                    painter = painterResource(id = imageRes),
+                    contentDescription = table.name,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
             }
 
             Spacer(modifier = Modifier.height(8.dp))

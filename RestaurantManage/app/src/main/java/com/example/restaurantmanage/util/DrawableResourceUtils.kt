@@ -21,7 +21,8 @@ object DrawableResourceUtils {
      */
     val availableDrawables = listOf(
         "food1", "food2", "drink", "nuocepdau", "nuoceple", 
-        "nuoceptao", "nuocepthom", "placeholder_food", "table_image"
+        "nuoceptao", "nuocepthom", "placeholder_food", "table_image",
+        "table_2_seats", "table_4_seats", "table_6_seats", "table_10_seats"
     )
     
     /**
@@ -39,6 +40,10 @@ object DrawableResourceUtils {
         "table_image" to R.drawable.table_image,
         "placeholder" to R.drawable.placeholder,
         "restaurant_logo" to R.drawable.restaurant_logo,
-        "featured_banner" to R.drawable.featured_banner
+        "featured_banner" to R.drawable.featured_banner,
+        "table_2_seats" to R.drawable.table_2_seats,
+        "table_4_seats" to R.drawable.table_4_seats,
+        "table_6_seats" to R.drawable.table_6_seats,
+        "table_10_seats" to R.drawable.table_10_seats
     )
 } 

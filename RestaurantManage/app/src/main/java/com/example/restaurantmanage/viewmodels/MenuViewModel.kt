@@ -5,7 +5,6 @@ import androidx.lifecycle.viewModelScope
 import com.example.restaurantmanage.data.local.dao.MenuItemDao
 import com.example.restaurantmanage.data.local.dao.CategoryDao
 import com.example.restaurantmanage.data.local.entity.MenuItemEntity
-import com.example.restaurantmanage.data.local.entity.CategoryEntity
 import com.example.restaurantmanage.data.models.MenuCategory
 import com.example.restaurantmanage.data.models.MenuItem
 import kotlinx.coroutines.Dispatchers
@@ -17,7 +16,7 @@ class MenuViewModel(
     private val menuItemDao: MenuItemDao,
     private val categoryDao: CategoryDao
 ) : ViewModel() {
-    private val TAG = "MenuViewModel"
+    private val tag = "MenuViewModel"
     
     private val _categories = MutableStateFlow<List<MenuCategory>>(emptyList())
     val categories: StateFlow<List<MenuCategory>> = _categories.asStateFlow()
@@ -110,11 +109,11 @@ class MenuViewModel(
                 )
 
                 menuItemDao.insertMenuItem(newItem)
-                Log.d(TAG, "Added menu item with image: $imagePath")
+                Log.d(tag, "Added menu item with image: $imagePath")
                 loadMenuData()
                 _error.value = null
             } catch (e: Exception) {
-                Log.e(TAG, "Error adding menu item", e)
+                Log.e(tag, "Error adding menu item", e)
                 _error.value = "Không thể thêm món: ${e.message}"
             } finally {
                 _isLoading.value = false
@@ -133,11 +132,11 @@ class MenuViewModel(
                 // Cập nhật chi tiết khác nếu có
                 menuItemDao.updateItemDetails(id, imagePath, description)
                 
-                Log.d(TAG, "Updated menu item: $id with image: $imagePath")
+                Log.d(tag, "Updated menu item: $id with image: $imagePath")
                 loadMenuData()
                 _error.value = null
             } catch (e: Exception) {
-                Log.e(TAG, "Error updating menu item", e)
+                Log.e(tag, "Error updating menu item", e)
                 _error.value = "Không thể cập nhật món: ${e.message}"
             } finally {
                 _isLoading.value = false

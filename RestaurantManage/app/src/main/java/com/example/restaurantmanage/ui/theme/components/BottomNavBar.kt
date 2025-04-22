@@ -50,7 +50,7 @@ fun BottomNavBar(
                 Icon(
                     painter = painterResource(id = R.drawable.ic_home),
                     contentDescription = "Home",
-                    modifier = Modifier.size(24.dp),
+                    modifier = Modifier.size(28.dp),
                     tint = if (currentRoute == "home") IconActiveColor else IconInactiveColor
                 )
             },
@@ -67,7 +67,7 @@ fun BottomNavBar(
                 Icon(
                     painter = painterResource(id = R.drawable.ic_booking),
                     contentDescription = "Booking",
-                    modifier = Modifier.size(24.dp),
+                    modifier = Modifier.size(28.dp),
                     tint = if (currentRoute == "booking") IconActiveColor else IconInactiveColor
                 )
             },

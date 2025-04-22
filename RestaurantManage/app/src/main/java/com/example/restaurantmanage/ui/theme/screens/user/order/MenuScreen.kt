@@ -45,6 +45,7 @@ fun MenuItemView(menuItem: MenuItem, navController: NavController) {
         modifier = Modifier
             .fillMaxWidth()
             .padding(4.dp)
+            .height(220.dp)  // Fixed height for all cards
             .clickable {
                 navController.navigate("detail/${menuItem.id}")
             },
@@ -117,15 +118,17 @@ fun MenuItemView(menuItem: MenuItem, navController: NavController) {
                 overflow = TextOverflow.Ellipsis
             )
 
-            Spacer(modifier = Modifier.height(4.dp))
 
-            // Mô tả
+            // Mô tả rút gọn
             Text(
-                text = menuItem.description.ifEmpty { "Món ăn đặc trưng" },
+                text = if (menuItem.description.isEmpty()) "Món ăn đặc trưng" 
+                       else if (menuItem.description.length > 50) menuItem.description.take(50) + "..." 
+                       else menuItem.description,
                 fontSize = 12.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
+                maxLines = 1,  // Giới hạn 1 dòng
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.height(20.dp)  // Chiều cao cố định cho phần mô tả
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -185,7 +188,7 @@ fun MenuScreen(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        AppBar("Thực đơn", navController, true)
+        AppBar("Thực đơn", navController, false)
 
         LazyRow(
             modifier = Modifier

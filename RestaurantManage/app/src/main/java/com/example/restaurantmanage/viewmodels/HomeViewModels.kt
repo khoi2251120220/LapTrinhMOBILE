@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.restaurantmanage.data.local.RestaurantDatabase
 import com.example.restaurantmanage.data.local.dao.CategoryDao
-import com.example.restaurantmanage.data.local.dao.CategoryWithMenuItems
 import com.example.restaurantmanage.data.local.dao.MenuItemDao
 import com.example.restaurantmanage.data.local.entity.CategoryWithItems
 import com.example.restaurantmanage.data.local.entity.MenuItemEntity
@@ -14,7 +13,7 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
 class HomeViewModel(
-    private val database: RestaurantDatabase
+    database: RestaurantDatabase
 ) : ViewModel() {
     private val menuItemDao: MenuItemDao = database.menuItemDao()
     private val categoryDao: CategoryDao = database.categoryDao()
@@ -26,7 +25,7 @@ class HomeViewModel(
     val categories: StateFlow<List<CategoryWithItems>> = _categories
 
     private val _searchQuery = MutableStateFlow("")
-    val searchQuery: StateFlow<String> = _searchQuery
+    //val searchQuery: StateFlow<String> = _searchQuery
 
     init {
         // Initial data loading

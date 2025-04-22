@@ -7,6 +7,5 @@ data class User(
     val phone: String,
     val role: String, // ADMIN, CUSTOMER
     val status: String, // ACTIVE, INACTIVE
-    val createdAt: String,
-    val lastLogin: String
+    val createdAt: String
 ) 

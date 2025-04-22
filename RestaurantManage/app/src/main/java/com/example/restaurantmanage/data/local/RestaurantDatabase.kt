@@ -16,7 +16,7 @@ import kotlinx.coroutines.launch
 
 @Database(
     entities = [
-//        UserEntity::class,
+        UserEntity::class,
         CategoryEntity::class,
         MenuItemEntity::class,
         TableEntity::class,
@@ -27,12 +27,12 @@ import kotlinx.coroutines.launch
         CartItemEntity::class,
         RatingEntity::class
     ],
-    version = 7,
+    version = 9,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
 abstract class RestaurantDatabase : RoomDatabase() {
-//    abstract fun userDao(): UserDao
+    abstract fun userDao(): UserDao
     abstract fun categoryDao(): CategoryDao
     abstract fun menuItemDao(): MenuItemDao
     abstract fun tableDao(): TableDao
@@ -55,7 +55,7 @@ abstract class RestaurantDatabase : RoomDatabase() {
             }
         }
         
-        // Migration từ version 4 sang 5: thêm bảng ratings
+
         private val MIGRATION_4_5 = object : Migration(4, 5) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL(
@@ -75,6 +75,21 @@ abstract class RestaurantDatabase : RoomDatabase() {
                 db.execSQL("ALTER TABLE orders ADD COLUMN customer_name TEXT NOT NULL DEFAULT 'Khách hàng'")
             }
         }
+        
+        // Migration từ version 7 sang 8: thêm bảng users
+        private val MIGRATION_7_8 = object : Migration(7, 8) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `users` (" +
+                    "`userId` TEXT NOT NULL PRIMARY KEY, " +
+                    "`name` TEXT NOT NULL, " +
+                    "`email` TEXT NOT NULL, " +
+                    "`phone` TEXT NOT NULL, " +
+                    "`address` TEXT NOT NULL DEFAULT '', " +
+                    "`role` TEXT NOT NULL DEFAULT 'user')"
+                )
+            }
+        }
 
         fun getDatabase(context: Context): RestaurantDatabase {
             return INSTANCE ?: synchronized(this) {
@@ -84,7 +99,7 @@ abstract class RestaurantDatabase : RoomDatabase() {
                     "restaurant_database"
                 )
                 .fallbackToDestructiveMigration()
-                .addMigrations(MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
+                .addMigrations(MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_7_8)
                 .build()
 
                 INSTANCE = instance

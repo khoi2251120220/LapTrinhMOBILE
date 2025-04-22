@@ -11,9 +11,11 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ShoppingCart
@@ -52,6 +54,7 @@ import com.example.restaurantmanage.viewmodels.CartViewModel
 import com.example.restaurantmanage.viewmodels.CartViewModelFactory
 import com.example.restaurantmanage.viewmodels.MenuViewModel
 import java.io.File
+import androidx.compose.runtime.collectAsState
 
 @Composable
 fun FoodDetailScreen(
@@ -65,6 +68,10 @@ fun FoodDetailScreen(
         factory = CartViewModelFactory(RestaurantDatabase.getDatabase(context))
     )
     var quantity by remember { mutableIntStateOf(1) }
+    
+    // Lấy số lượng món ăn trong giỏ hàng
+    val cartItems = cartViewModel.cartItems.collectAsState().value
+    val itemCount = cartItems.sumOf { it.quantity }
 
     LaunchedEffect(menuItemId) {
         viewModel.getMenuItemById(menuItemId).collect { item ->
@@ -91,12 +98,34 @@ fun FoodDetailScreen(
                     modifier = Modifier
                         .align(Alignment.CenterEnd)
                         .padding(end = 8.dp)
+                        
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.ShoppingCart,
-                        contentDescription = "Giỏ hàng",
-                        tint = Color.Black
-                    )
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = Icons.Default.ShoppingCart,
+                            contentDescription = "Giỏ hàng",
+                            tint = Color.Black
+                        )
+                        
+                        if (itemCount > 0) {
+                            Box(
+                                modifier = Modifier
+                                    .offset(x = 5.dp, y = (-10).dp)
+                                    .size(width = if (itemCount > 9) 24.dp else 20.dp, height = 20.dp)
+                                    .background(Color.Black, CircleShape)
+                                    .align(Alignment.TopEnd),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = if (itemCount > 99) "99+" else itemCount.toString(),
+                                    color = Color.White,
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.padding(horizontal = 2.dp)
+                                )
+                            }
+                        }
+                    }
                 }
             }
         },
@@ -265,8 +294,8 @@ fun FoodDetailScreen(
                                 cartViewModel.addToCart(menuItemModel)
                             }
                             
-                            // Hiển thị thông báo và chuyển đến màn hình giỏ hàng
-                            navController.navigate("cart")
+                            // Hiển thị thông báo thành công thay vì chuyển đến giỏ hàng
+                            quantity = 1 // Reset số lượng về 1 sau khi thêm vào giỏ
                         },
                         modifier = Modifier
                             .fillMaxWidth()

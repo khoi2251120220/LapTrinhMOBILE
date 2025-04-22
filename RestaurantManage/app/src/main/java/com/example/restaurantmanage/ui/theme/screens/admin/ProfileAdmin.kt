@@ -206,19 +206,28 @@ fun ProfileInfoItem(
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .height(56.dp)  // Fixed height for all items
             .padding(vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(
-            painter = painterResource(id = icon),
-            contentDescription = title,
-            tint = Color.Gray,
-            modifier = Modifier.size(24.dp)
-        )
+        Box(
+            modifier = Modifier.size(40.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                painter = painterResource(id = icon),
+                contentDescription = title,
+                tint = Color.Gray,
+                modifier = Modifier.size(24.dp)
+            )
+        }
         
         Spacer(modifier = Modifier.width(16.dp))
         
-        Column {
+        Column(
+            modifier = Modifier.fillMaxHeight(),
+            verticalArrangement = Arrangement.Center
+        ) {
             Text(
                 text = title,
                 fontSize = 14.sp,
