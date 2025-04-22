@@ -1,45 +1,37 @@
 package com.example.restaurantmanage.ui.theme.screens.user.booking
 
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.layout.ContentScale
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.example.restaurantmanage.R
+import com.example.restaurantmanage.data.local.RestaurantDatabase
+import com.example.restaurantmanage.data.local.entity.TableEntity
 import com.example.restaurantmanage.ui.theme.RestaurantManageTheme
 import com.example.restaurantmanage.ui.theme.components.AppBar
 import com.example.restaurantmanage.viewmodels.BookingViewModel
-import com.example.restaurantmanage.data.local.RestaurantDatabase
-import com.example.restaurantmanage.data.local.entity.TableEntity
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -113,7 +105,7 @@ fun BookingDialog(
                     isError = numberOfGuests.isEmpty() || ((numberOfGuests.toIntOrNull() ?: 0) > table.capacity)
                 )
 
-                if (numberOfGuests.toIntOrNull() ?: 0 > table.capacity) {
+                if ((numberOfGuests.toIntOrNull() ?: 0) > table.capacity) {
                     Text(
                         text = "Số lượng người vượt quá sức chứa của bàn (${table.capacity} người)",
                         color = MaterialTheme.colorScheme.error,
@@ -162,8 +154,8 @@ fun BookingDialog(
         confirmButton = {
             Button(
                 onClick = {
-                    if ((customerName.isNotEmpty() && phoneNumber.isNotEmpty() && 
-                        numberOfGuests.isNotEmpty()) && 
+                    if (customerName.isNotEmpty() && phoneNumber.isNotEmpty() && 
+                        numberOfGuests.isNotEmpty() && 
                         ((numberOfGuests.toIntOrNull() ?: 0) <= table.capacity)) {
                         onConfirm(customerName, phoneNumber, numberOfGuests.toInt(), selectedDate, note)
                     }
@@ -247,205 +239,215 @@ fun BookingDialog(
 }
 
 @Composable
-fun BookingScreen(navController: NavController) {
-    val context = LocalContext.current
-    val database = RestaurantDatabase.getDatabase(context)
-    val viewModel: BookingViewModel = viewModel(
+fun TableCard(
+    table: TableEntity,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() },
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 4.dp
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+        ) {
+            // Image section
+            AsyncImage(
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(table.image.ifEmpty { R.drawable.table_image })
+                    .crossfade(true)
+                    .build(),
+                contentDescription = "Bàn ${table.name}",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(160.dp)
+            )
+            
+            // Text section
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+            ) {
+                Text(
+                    text = table.name,
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "${table.capacity} người",
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                    Button(
+                        onClick = onClick,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color.Black
+                        ),
+                        modifier = Modifier
+                            .padding(start = 8.dp)
+                            .height(36.dp)
+                    ) {
+                        Text("Chọn")
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+@Composable
+fun BookingScreen(
+    navController: NavController,
+    viewModel: BookingViewModel = viewModel(
         factory = BookingViewModel.Factory(
-            bookingDao = database.bookingDao(),
-            tableDao = database.tableDao()
+            bookingDao = RestaurantDatabase.getDatabase(LocalContext.current).bookingDao(),
+            tableDao = RestaurantDatabase.getDatabase(LocalContext.current).tableDao()
         )
     )
-
-    val availableTables by viewModel.availableTables.collectAsState(initial = emptyList())
-    val keyboardController = LocalSoftwareKeyboardController.current
-    var textSearch by remember { mutableStateOf("") }
+) {
+    val tables by viewModel.availableTables.collectAsState(initial = emptyList())
     var showBookingDialog by remember { mutableStateOf(false) }
     var selectedTable by remember { mutableStateOf<TableEntity?>(null) }
+    var showSuccessMessage by remember { mutableStateOf(false) }
+    var searchQuery by remember { mutableStateOf("") }
+    val filteredTables by viewModel.filteredTables.collectAsState(initial = emptyList())
+
+    // Initialize filtered tables with all available tables
+    LaunchedEffect(Unit) {
+        viewModel.setFilteredTables(tables)
+    }
+    
+    // Update filtered tables when search query changes
+    LaunchedEffect(searchQuery, tables) {
+        if (searchQuery.isEmpty()) {
+            viewModel.setFilteredTables(tables)
+        } else {
+            viewModel.searchTables(searchQuery)
+        }
+    }
+
+    val keyboardController = LocalSoftwareKeyboardController.current
 
     Scaffold(
         topBar = {
             AppBar(
                 title = "Đặt bàn",
                 navController = navController,
-                showBackButton = true
+                showBackButton = false
             )
         }
-    ) { paddingValues ->
+    ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
+                .padding(padding)
+                .padding(horizontal = 16.dp)
         ) {
-            TextField(
-                value = textSearch,
-                onValueChange = { textSearch = it },
-                label = {
-                    Text(
-                        text = buildAnnotatedString {
-                            append(
-                                AnnotatedString(
-                                    text = "Tìm bàn ",
-                                    spanStyle = SpanStyle(
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 16.sp,
-                                        color = Color.Black
-                                    )
-                                )
-                            )
-                            append(
-                                AnnotatedString(
-                                    text = "(phòng ăn)",
-                                    spanStyle = SpanStyle(
-                                        fontWeight = FontWeight.Normal,
-                                        fontSize = 16.sp,
-                                        color = Color.Black
-                                    )
-                                )
-                            )
-                        }
-                    )
-                },
-                placeholder = {
-                    Text(
-                        text = "Thời gian • số lượng phòng • số người",
-                        style = TextStyle(
-                            fontSize = 12.sp,
-                            color = Color.Gray
-                        )
-                    )
-                },
-                leadingIcon = {
+            // Search bar
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { searchQuery = it },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                placeholder = { Text("Tìm kiếm bàn...") },
+                leadingIcon = { 
                     Icon(
                         imageVector = Icons.Default.Search,
-                        contentDescription = null
+                        contentDescription = "Search"
                     )
                 },
-                trailingIcon = {
-                    Icon(
-                        imageVector = Icons.Default.Edit,
-                        contentDescription = null
-                    )
-                },
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Text,
-                    imeAction = ImeAction.Search
-                ),
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                 keyboardActions = KeyboardActions(
                     onSearch = {
                         keyboardController?.hide()
                     }
-                ),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(Color(0xFFA8A2A2)),
-                colors = TextFieldDefaults.colors(
-                    focusedIndicatorColor = Color.Transparent,
-                    unfocusedIndicatorColor = Color.Transparent
                 )
             )
 
-            if (availableTables.isEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(16.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "Không có bàn trống",
-                        fontSize = 16.sp,
-                        color = Color.Gray,
-                        textAlign = TextAlign.Center
-                    )
-                }
-            } else {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 16.dp)
-                ) {
-                    items(availableTables) { table ->
-                        Card(
+
+            // Table list
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+            ) {
+                if (filteredTables.isEmpty()) {
+                    item {
+                        Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(bottom = 16.dp),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                                .padding(vertical = 24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Column(modifier = Modifier.padding(16.dp)) {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(150.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Image(
-                                        painter = painterResource(id = R.drawable.table_image),
-                                        contentDescription = null,
-                                        modifier = Modifier.fillMaxWidth(),
-                                        contentScale = ContentScale.Crop
-                                    )
-                                }
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text(
-                                    text = table.name,
-                                    fontSize = 18.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Text(
-                                    text = "Sức chứa: ${table.capacity} người",
-                                    fontSize = 14.sp,
-                                    color = Color.Gray
-                                )
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(
-                                        text = "500,000 VND",
-                                        fontSize = 16.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.primary
-                                    )
-                                    Button(
-                                        onClick = {
-                                            selectedTable = table
-                                            showBookingDialog = true
-                                        }
-                                    ) {
-                                        Text("Đặt bàn")
-                                    }
-                                }
-                            }
+                            Text(
+                                text = "Không tìm thấy bàn nào",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = Color.Gray,
+                                textAlign = TextAlign.Center
+                            )
                         }
+                    }
+                } else {
+                    items(filteredTables) { table ->
+                        TableCard(
+                            table = table,
+                            onClick = {
+                                selectedTable = table
+                                showBookingDialog = true
+                            }
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
                     }
                 }
             }
         }
     }
 
-    if (showBookingDialog && selectedTable != null) {
-        BookingDialog(
-            table = selectedTable!!,
-            onDismiss = {
-                showBookingDialog = false
-                selectedTable = null
-            },
-            onConfirm = { name, phone, guests, date, note ->
-                viewModel.createBooking(
-                    tableId = selectedTable!!.id,
-                    customerName = name,
-                    phoneNumber = phone,
-                    numberOfGuests = guests,
-                    time = date,
-                    note = note
-                )
-                showBookingDialog = false
-                selectedTable = null
+    // Booking Dialog
+    if (showBookingDialog) {
+        selectedTable?.let { table ->
+            BookingDialog(
+                table = table,
+                onDismiss = { showBookingDialog = false },
+                onConfirm = { customerName, phoneNumber, numberOfGuests, bookingTime, note ->
+                    viewModel.createBooking(
+                        tableId = table.id,
+                        customerName = customerName,
+                        phoneNumber = phoneNumber,
+                        numberOfGuests = numberOfGuests,
+                        bookingTime = bookingTime,
+                        note = note
+                    )
+                    showBookingDialog = false
+                    showSuccessMessage = true
+                }
+            )
+        }
+    }
+
+    // Success message
+    if (showSuccessMessage) {
+        AlertDialog(
+            onDismissRequest = { showSuccessMessage = false },
+            title = { Text("Đặt bàn thành công") },
+            text = { Text("Bạn đã đặt bàn thành công. Chúng tôi sẽ liên hệ để xác nhận.") },
+            confirmButton = {
+                Button(onClick = { showSuccessMessage = false }) {
+                    Text("OK")
+                }
             }
         )
     }

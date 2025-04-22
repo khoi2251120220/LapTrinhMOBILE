@@ -8,7 +8,10 @@ class CartViewModelFactory(private val database: RestaurantDatabase) : ViewModel
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(CartViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return CartViewModel(database.cartItemDao()) as T
+            return CartViewModel(
+                cartItemDao = database.cartItemDao(),
+                menuItemDao = database.menuItemDao()
+            ) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

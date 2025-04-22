@@ -9,8 +9,11 @@ class OrderViewModelFactory(private val database: RestaurantDatabase) : ViewMode
         if (modelClass.isAssignableFrom(OrderViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
             return OrderViewModel(
-                database.orderDao(),
-                database.orderItemDao()
+                database = database,
+                orderDao = database.orderDao(),
+                orderItemDao = database.orderItemDao(),
+                cartItemDao = database.cartItemDao(),
+                menuItemDao = database.menuItemDao()
             ) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")

@@ -6,8 +6,8 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface OrderItemDao {
-    @Query("SELECT * FROM order_items WHERE order_id = :orderId")
-    fun getOrderItemsByOrderId(orderId: Int): Flow<List<OrderItemEntity>>
+    @Query("SELECT * FROM order_items WHERE orderId = :orderId")
+    fun getOrderItemsByOrderId(orderId: String): Flow<List<OrderItemEntity>>
 
     @Query("SELECT * FROM order_items WHERE menu_item_id = :menuItemId")
     fun getOrderItemsByMenuItemId(menuItemId: String): Flow<List<OrderItemEntity>>
@@ -24,6 +24,6 @@ interface OrderItemDao {
     @Delete
     suspend fun deleteOrderItem(orderItem: OrderItemEntity)
 
-    @Query("DELETE FROM order_items WHERE order_id = :orderId")
-    suspend fun deleteOrderItemsByOrderId(orderId: Int)
+    @Query("DELETE FROM order_items WHERE orderId = :orderId")
+    suspend fun deleteOrderItemsByOrderId(orderId: String)
 } 

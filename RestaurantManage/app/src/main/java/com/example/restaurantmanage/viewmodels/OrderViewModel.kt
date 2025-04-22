@@ -1,78 +1,109 @@
 package com.example.restaurantmanage.viewmodels
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.restaurantmanage.data.local.RestaurantDatabase
+import com.example.restaurantmanage.data.local.dao.CartItemDao
+import com.example.restaurantmanage.data.local.dao.MenuItemDao
 import com.example.restaurantmanage.data.local.dao.OrderDao
 import com.example.restaurantmanage.data.local.dao.OrderItemDao
+import com.example.restaurantmanage.data.local.entity.CartItemEntity
 import com.example.restaurantmanage.data.local.entity.OrderEntity
 import com.example.restaurantmanage.data.local.entity.OrderItemEntity
-import com.example.restaurantmanage.data.models.CartItem
+import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.util.Date
+import java.util.UUID
 
 class OrderViewModel(
+    private val database: RestaurantDatabase,
     private val orderDao: OrderDao,
-    private val orderItemDao: OrderItemDao
+    private val orderItemDao: OrderItemDao,
+    private val cartItemDao: CartItemDao,
+    private val menuItemDao: MenuItemDao
 ) : ViewModel() {
     
-    private val _currentOrderId = MutableStateFlow<Int?>(null)
-    val currentOrderId: StateFlow<Int?> = _currentOrderId.asStateFlow()
+    private val _currentOrderId = MutableStateFlow<String?>(null)
+    val currentOrderId: StateFlow<String?> = _currentOrderId
     
     private val _orderStatus = MutableStateFlow("")
-    val orderStatus: StateFlow<String> = _orderStatus.asStateFlow()
+    val orderStatus: StateFlow<String> = _orderStatus
     
     private val _customerName = MutableStateFlow("")
-    val customerName: StateFlow<String> = _customerName.asStateFlow()
+    val customerName: StateFlow<String> = _customerName
     
+    // Renamed to avoid name clash with the function below
+    val orders = orderDao.getAllOrders()
+    val pendingOrders = orderDao.getOrdersByStatus("PENDING")
+    
+    // User's orders - visible in profile
+    private val _userOrders = MutableStateFlow<List<OrderEntity>>(emptyList())
+    val userOrders: StateFlow<List<OrderEntity>> = _userOrders
+
+    // This function clashes with the property above, renamed the property
     fun getAllOrders(): Flow<List<OrderEntity>> {
         return orderDao.getAllOrders()
     }
     
-    fun getOrderById(id: Int): Flow<List<OrderItemEntity>> {
+    fun getOrderById(id: String): Flow<List<OrderItemEntity>> {
         return orderItemDao.getOrderItemsByOrderId(id)
     }
     
     // Tạo đơn hàng mới từ giỏ hàng
-    suspend fun createOrderFromCart(cartItems: List<CartItem>, totalAmount: Double, customerName: String): Int {
+    suspend fun createOrderFromCart(cartItems: List<CartItemEntity>, totalAmount: Double, customerName: String): String {
         if (cartItems.isEmpty()) {
             throw IllegalStateException("Không thể tạo đơn hàng với giỏ hàng trống")
         }
         
-        // Tạo OrderEntity mới
+        val orderId = UUID.randomUUID().toString()
+        
+        // Tạo đơn hàng và thêm các mục
         val order = OrderEntity(
-            tableId = null, // Không gắn với bàn cụ thể
-            startTime = Date().time,
+            id = orderId,
+            userId = FirebaseAuth.getInstance().currentUser?.uid,
+            customerName = customerName,
+            customerEmail = "",
+            customerPhone = "",
+            orderDate = Date(),
             totalAmount = totalAmount,
-            customerName = customerName, // Lưu tên khách hàng
-            status = "COMPLETED" // Trạng thái hoàn thành
+            status = "PENDING",
+            paymentMethod = "",
+            tableId = null
         )
         
-        // Lưu vào cơ sở dữ liệu
         orderDao.insertOrder(order)
         
-        // Lấy ID mới được tạo
-        val lastInsertedOrder = orderDao.getLastInsertedOrder()
-        val orderId = lastInsertedOrder?.id ?: 0
-        
-        if (orderId > 0) {
-            // Lưu các món ăn trong đơn hàng
-            val orderItems = cartItems.map { cartItem ->
-                OrderItemEntity(
-                    orderId = orderId,
-                    menuItemId = cartItem.menuItem.id,
-                    quantity = cartItem.quantity
-                )
-            }
+        // Lưu các món ăn trong đơn hàng
+        cartItems.forEach { cartItem ->
+            val orderItem = OrderItemEntity(
+                orderId = orderId,
+                menuItemId = cartItem.menuItemId,
+                quantity = cartItem.quantity,
+                price = cartItem.price,
+                notes = cartItem.notes ?: ""
+            )
+            orderItemDao.insertOrderItem(orderItem)
             
-            orderItemDao.insertOrderItems(orderItems)
-            _currentOrderId.value = orderId
-            _customerName.value = customerName
-            _orderStatus.value = "COMPLETED"
+            // Update order count for menu item
+            val menuItem = menuItemDao.getMenuItemById(cartItem.menuItemId)
+            if (menuItem != null) {
+                menuItemDao.updateOrderCount(cartItem.menuItemId, menuItem.orderCount + cartItem.quantity)
+            }
         }
+        
+        // Clear the cart after creating the order
+        cartItems.forEach { cartItem ->
+            cartItemDao.deleteCartItem(cartItem.menuItemId)
+        }
+        
+        // Cập nhật state
+        _currentOrderId.value = orderId
+        _customerName.value = customerName
+        _orderStatus.value = "PENDING"
         
         return orderId
     }
@@ -83,21 +114,14 @@ class OrderViewModel(
     }
     
     // Cập nhật trạng thái đơn hàng
-    fun updateOrderStatus(orderId: Int, status: String) {
+    fun updateOrderStatus(orderId: String, status: String) {
         viewModelScope.launch {
-            val order = orderDao.getOrderById(orderId)
-            order?.let {
-                val updatedOrder = it.copy(status = status)
-                orderDao.updateOrder(updatedOrder)
-                if (orderId == _currentOrderId.value) {
-                    _orderStatus.value = status
-                }
-            }
+            orderDao.updateOrderStatus(orderId, status)
         }
     }
     
     // Xóa đơn hàng
-    fun deleteOrder(orderId: Int) {
+    fun deleteOrder(orderId: String) {
         viewModelScope.launch {
             val order = orderDao.getOrderById(orderId)
             order?.let {
@@ -107,6 +131,39 @@ class OrderViewModel(
                     _orderStatus.value = ""
                 }
             }
+        }
+    }
+
+    // Load orders for a specific user
+    fun loadUserOrders(userId: String) {
+        viewModelScope.launch {
+            orderDao.getOrdersByUserId(userId).collect { orders ->
+                _userOrders.value = orders.sortedByDescending { it.orderDate }
+            }
+        }
+    }
+    
+    // Load orders for current user
+    fun loadCurrentUserOrders() {
+        val currentUserId = FirebaseAuth.getInstance().currentUser?.uid
+        currentUserId?.let { userId ->
+            loadUserOrders(userId)
+        }
+    }
+
+    class Factory(private val database: RestaurantDatabase) : ViewModelProvider.Factory {
+        @Suppress("UNCHECKED_CAST")
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            if (modelClass.isAssignableFrom(OrderViewModel::class.java)) {
+                return OrderViewModel(
+                    database = database,
+                    orderDao = database.orderDao(),
+                    orderItemDao = database.orderItemDao(),
+                    cartItemDao = database.cartItemDao(),
+                    menuItemDao = database.menuItemDao()
+                ) as T
+            }
+            throw IllegalArgumentException("Unknown ViewModel class")
         }
     }
 } 

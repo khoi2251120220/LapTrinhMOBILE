@@ -172,12 +172,15 @@ class MenuViewModel(
     }
 
     fun getMenuItemById(id: String): Flow<MenuItemEntity?> {
-        return menuItemDao.getMenuItemById(id)
-            .catch { e -> 
+        return flow {
+            try {
+                val menuItem = menuItemDao.getMenuItemById(id)
+                emit(menuItem)
+            } catch (e: Exception) {
                 _error.value = "Không thể tải thông tin món: ${e.message}"
                 emit(null)
             }
-            .flowOn(Dispatchers.IO)
+        }.flowOn(Dispatchers.IO)
     }
 
     fun clearError() {

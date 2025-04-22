@@ -1,8 +1,9 @@
 package com.example.restaurantmanage.data.local.entity
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
-import androidx.room.PrimaryKey
 import androidx.room.ForeignKey
+import androidx.room.PrimaryKey
 
 @Entity(
     tableName = "cart_items",
@@ -16,12 +17,10 @@ import androidx.room.ForeignKey
     ]
 )
 data class CartItemEntity(
-    @PrimaryKey(autoGenerate = true) val cartItemId: Long = 0,
-    val menuItemId: String,
-    val name: String,
+    @PrimaryKey(autoGenerate = true) val id: Int = 0,
+    @ColumnInfo(name = "menuItemId") val menuItemId: String,
+    @ColumnInfo(name = "userId") val userId: String?,
+    val quantity: Int,
     val price: Double,
-    val categoryId: Int,
-    val image: String,
-    val description: String? = null, // Make optional if not always provided
-    val quantity: Int = 1 // Default to 1
+    val notes: String? = null
 )

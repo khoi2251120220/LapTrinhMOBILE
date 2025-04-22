@@ -23,22 +23,54 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.restaurantmanage.viewmodels.ProfileViewModel
+import com.example.restaurantmanage.data.local.RestaurantDatabase
+import com.example.restaurantmanage.data.local.entity.OrderEntity
+import com.example.restaurantmanage.data.local.entity.BookingEntity
+import com.example.restaurantmanage.viewmodels.OrderViewModel
+import com.example.restaurantmanage.viewmodels.OrderViewModelFactory
+import com.example.restaurantmanage.viewmodels.BookingViewModel
+import com.example.restaurantmanage.ui.theme.components.formatCurrency
+import com.google.firebase.auth.FirebaseAuth
+import java.text.SimpleDateFormat
+import java.util.*
 
 @Composable
 fun ProfileScreen(
-    viewModel: ProfileViewModel = viewModel()
+    viewModel: ProfileViewModel = viewModel(),
+    orderViewModel: OrderViewModel = viewModel(
+        factory = OrderViewModelFactory(RestaurantDatabase.getDatabase(LocalContext.current))
+    ),
+    bookingViewModel: BookingViewModel = viewModel(
+        factory = BookingViewModel.Factory(
+            bookingDao = RestaurantDatabase.getDatabase(LocalContext.current).bookingDao(),
+            tableDao = RestaurantDatabase.getDatabase(LocalContext.current).tableDao()
+        )
+    )
 ) {
     val userProfile by viewModel.userProfile.collectAsState()
     val isSaved by viewModel.isSaved.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
+    val orders by orderViewModel.userOrders.collectAsState(initial = emptyList())
+    val bookings by bookingViewModel.userBookings.collectAsState(initial = emptyList())
     val context = LocalContext.current
 
     var name by remember { mutableStateOf(userProfile.name) }
     var email by remember { mutableStateOf(userProfile.email) }
     var phone by remember { mutableStateOf(userProfile.phone) }
     var address by remember { mutableStateOf(userProfile.address) }
-    val favoriteItems = remember { mutableStateListOf<String>().apply { addAll(userProfile.favoriteItems) } }
+    var isEditing by remember { mutableStateOf(false) }
+    
+    // Lấy ID của người dùng hiện tại
+    val currentUserId = FirebaseAuth.getInstance().currentUser?.uid
+    
+    // Load user orders
+    LaunchedEffect(currentUserId) {
+        currentUserId?.let { userId ->
+            orderViewModel.loadUserOrders(userId)
+            // Không cần load bookings ở đây vì BookingViewModel đã tự động load trong init
+        }
+    }
 
     // Cập nhật UI khi userProfile thay đổi
     LaunchedEffect(userProfile) {
@@ -46,8 +78,6 @@ fun ProfileScreen(
         email = userProfile.email
         phone = userProfile.phone
         address = userProfile.address
-        favoriteItems.clear()
-        favoriteItems.addAll(userProfile.favoriteItems)
     }
 
     // Reset trạng thái lưu sau 2 giây
@@ -74,7 +104,7 @@ fun ProfileScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Profile",
+                    text = "Hồ sơ",
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold
                 )
@@ -100,7 +130,7 @@ fun ProfileScreen(
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = "Sign Out",
+                        text = "Đăng xuất",
                         color = MaterialTheme.colorScheme.primary,
                         fontSize = 16.sp
                     )
@@ -108,10 +138,6 @@ fun ProfileScreen(
             }
 
             Spacer(modifier = Modifier.height(24.dp))
-
-
-
-            Spacer(modifier = Modifier.height(16.dp))
 
             // Hiển thị lỗi nếu có
             if (errorMessage.isNotEmpty()) {
@@ -128,59 +154,80 @@ fun ProfileScreen(
                 }
             }
 
-            // User Profile Section
+            // Thông tin người dùng
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Thông tin cá nhân",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold
+                        )
+                        
+                        IconButton(
+                            onClick = { isEditing = !isEditing }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Edit,
+                                contentDescription = if (isEditing) "Kết thúc chỉnh sửa" else "Chỉnh sửa thông tin",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+                    
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Box(
                             modifier = Modifier
-                                .size(80.dp)
+                                .size(60.dp)
                                 .clip(CircleShape)
-                                .background(Color.LightGray),
+                                .background(MaterialTheme.colorScheme.primary),
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                text = name.take(2).uppercase(),
+                                text = name.take(1).uppercase(),
                                 style = MaterialTheme.typography.headlineMedium,
-                                color = Color.White
+                                color = MaterialTheme.colorScheme.onPrimary
                             )
                         }
                         Spacer(modifier = Modifier.width(16.dp))
-                        OutlinedTextField(
-                            value = name,
-                            onValueChange = { name = it; viewModel.updateProfile(name = it) },
-                            label = { Text("Tên") },
-                            modifier = Modifier.weight(1f),
-                            enabled = !isLoading
-                        )
+                        Column {
+                            if (isEditing) {
+                                OutlinedTextField(
+                                    value = name,
+                                    onValueChange = { name = it },
+                                    label = { Text("Tên") },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    enabled = !isLoading
+                                )
+                            } else {
+                                Text(
+                                    text = name,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                            Text(
+                                text = email,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = Color.Gray
+                            )
+                        }
                     }
 
-                    Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
+                    HorizontalDivider()
+                    Spacer(modifier = Modifier.height(16.dp))
 
-                    // Email
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.Email,
-                            contentDescription = "Email",
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                        Spacer(modifier = Modifier.width(16.dp))
-                        OutlinedTextField(
-                            value = email,
-                            onValueChange = { /* Email không cho chỉnh sửa */ },
-                            label = { Text("Email") },
-                            modifier = Modifier.fillMaxWidth(),
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                            enabled = false
-                        )
-                    }
-
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
-
-                    // Phone
+                    // Số điện thoại
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
                             imageVector = Icons.Default.Phone,
@@ -188,22 +235,46 @@ fun ProfileScreen(
                             tint = MaterialTheme.colorScheme.primary
                         )
                         Spacer(modifier = Modifier.width(16.dp))
-                        OutlinedTextField(
-                            value = phone,
-                            onValueChange = { phone = it; viewModel.updateProfile(phone = it) },
-                            label = { Text("Số điện thoại") },
-                            modifier = Modifier.fillMaxWidth(),
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-                            enabled = !isLoading
-                        )
+                        if (isEditing) {
+                            OutlinedTextField(
+                                value = phone,
+                                onValueChange = { phone = it },
+                                label = { Text("Số điện thoại") },
+                                modifier = Modifier.fillMaxWidth(),
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                                enabled = !isLoading
+                            )
+                        } else {
+                            Text(
+                                text = phone.ifEmpty { "Chưa cập nhật" },
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                        }
                     }
 
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
-
-
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    if (isEditing) {
+                        Button(
+                            onClick = {
+                                viewModel.updateProfile(name = name, phone = phone)
+                                isEditing = false
+                            },
+                            modifier = Modifier.align(Alignment.End),
+                            enabled = !isLoading
+                        ) {
+                            if (isLoading) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(24.dp),
+                                    color = MaterialTheme.colorScheme.onPrimary
+                                )
+                            } else {
+                                Text("Lưu thay đổi")
+                            }
+                        }
+                    }
                 }
             }
-
 
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -213,53 +284,157 @@ fun ProfileScreen(
                 elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = "Lịch sử đặt hàng",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+                    
+                    Spacer(modifier = Modifier.height(8.dp))
+                    
+                    if (orders.isEmpty()) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 32.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "Bạn chưa có đơn hàng nào",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = Color.Gray
+                            )
+                        }
+                    } else {
+                        Column {
+                            orders.forEach { order ->
+                                OrderHistoryItem(order = order)
+                                if (order != orders.last()) {
+                                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            Spacer(modifier = Modifier.height(24.dp))
+            
+            // Booking History Section
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = "Lịch sử đặt bàn",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+                    
+                    Spacer(modifier = Modifier.height(8.dp))
+                    
+                    if (bookings.isEmpty()) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 32.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "Bạn chưa có đơn đặt bàn nào",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = Color.Gray
+                            )
+                        }
+                    } else {
+                        Column {
+                            bookings.forEach { booking ->
+                                BookingHistoryItem(
+                                    booking = booking,
+                                    onCancelClick = {
+                                        bookingViewModel.cancelBooking(booking)
+                                    }
+                                )
+                                if (booking != bookings.last()) {
+                                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            // Success message
+            if (isSaved) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFE8F5E9))
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         Icon(
-                            imageVector = Icons.Default.History,
-                            contentDescription = "History",
-                            tint = MaterialTheme.colorScheme.primary
+                            imageVector = Icons.Default.CheckCircle,
+                            contentDescription = "Success",
+                            tint = Color(0xFF4CAF50)
                         )
                         Spacer(modifier = Modifier.width(16.dp))
                         Text(
-                            text = "Order History",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold
+                            text = "Thông tin đã được cập nhật",
+                            color = Color(0xFF2E7D32)
                         )
                     }
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Text(
-                        "Lịch sử gọi món của bạn sẽ xuất hiện ở đây",
-                        modifier = Modifier.padding(8.dp),
-                        color = Color.Gray
-                    )
                 }
             }
         }
+    }
+}
 
-        // Save Button - Cố định ở dưới màn hình
-        Button(
-            onClick = { if (!isLoading) viewModel.saveProfile() },
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth()
-                .padding(16.dp)
-                .height(50.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = if (isSaved) Color.Green else MaterialTheme.colorScheme.primary
-            ),
-            enabled = !isLoading
+@Composable
+fun OrderHistoryItem(order: OrderEntity) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            if (isLoading) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(24.dp),
-                    color = Color.White
-                )
-            } else {
+            // Order ID and date
+            Column {
                 Text(
-                    text = if (isSaved) "ĐÃ LƯU" else "LƯU THÔNG TIN",
-                    fontSize = 16.sp,
+                    text = "Đơn hàng #${order.id.takeLast(5).uppercase()}",
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(order.orderDate),
+                    fontSize = 12.sp,
+                    color = Color.Gray
+                )
+            }
+            
+            // Order status and total
+            Column(horizontalAlignment = Alignment.End) {
+                Text(
+                    text = when(order.status) {
+                        "PENDING" -> "Đang xử lý"
+                        "COMPLETED" -> "Hoàn thành"
+                        "CANCELLED" -> "Đã hủy"
+                        else -> order.status
+                    },
+                    color = when(order.status) {
+                        "PENDING" -> Color(0xFFFFA000)
+                        "COMPLETED" -> Color(0xFF4CAF50)
+                        "CANCELLED" -> Color(0xFFF44336)
+                        else -> Color.Gray
+                    },
+                    fontWeight = FontWeight.Medium
+                )
+                Text(
+                    text = formatCurrency(order.totalAmount),
                     fontWeight = FontWeight.Bold
                 )
             }
@@ -267,22 +442,74 @@ fun ProfileScreen(
     }
 }
 
-@Preview(showBackground = true, showSystemUi = true, device = "spec:width=411dp,height=891dp")
+@Composable
+fun BookingHistoryItem(
+    booking: BookingEntity,
+    onCancelClick: () -> Unit
+) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            // Booking ID and date
+            Column {
+                Text(
+                    text = "Bàn #${booking.tableId}",
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(booking.bookingTime),
+                    fontSize = 12.sp,
+                    color = Color.Gray
+                )
+                Text(
+                    text = "Số người: ${booking.numberOfGuests}",
+                    fontSize = 12.sp,
+                    color = Color.Gray
+                )
+            }
+            
+            // Booking status
+            Column(horizontalAlignment = Alignment.End) {
+                Text(
+                    text = when(booking.status) {
+                        "PENDING" -> "Chờ xác nhận"
+                        "CONFIRMED" -> "Đã xác nhận"
+                        "CANCELLED" -> "Đã hủy"
+                        else -> booking.status
+                    },
+                    color = when(booking.status) {
+                        "PENDING" -> Color(0xFFFFA000)
+                        "CONFIRMED" -> Color(0xFF4CAF50)
+                        "CANCELLED" -> Color(0xFFF44336)
+                        else -> Color.Gray
+                    },
+                    fontWeight = FontWeight.Medium
+                )
+            }
+        }
+        
+        if (booking.status == "CONFIRMED") {
+            Spacer(modifier = Modifier.height(8.dp))
+            Button(
+                onClick = onCancelClick,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFFF44336)
+                ),
+                modifier = Modifier.align(Alignment.End),
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+            ) {
+                Text("Hủy đặt bàn", fontSize = 12.sp)
+            }
+        }
+    }
+}
+
+@Preview(showBackground = true)
 @Composable
 fun ProfileScreenPreview() {
     MaterialTheme {
-        val mockViewModel = ProfileViewModel().apply {
-            updateProfile(
-                name = "T4 dpcfso",
-                email = "jul.msnr.nb@gmail.com",
-                phone = "012416799",
-                address = "192 Street Norms, Aqn.1, Flat 2",
-                favoriteItems = listOf("Món yêu thích 1", "Món yêu thích 2"),
-                role = "user"
-            )
-        }
-        ProfileScreen(
-            viewModel = mockViewModel
-        )
+        ProfileScreen()
     }
 }

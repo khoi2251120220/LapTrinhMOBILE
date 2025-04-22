@@ -4,10 +4,8 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -27,7 +25,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.example.restaurantmanage.ui.theme.components.AppBar
-import com.example.restaurantmanage.data.local.entity.MenuItemEntity
 import com.example.restaurantmanage.viewmodels.MenuViewModel
 import com.example.restaurantmanage.viewmodels.MenuViewModelFactory
 import com.example.restaurantmanage.data.local.RestaurantDatabase
@@ -36,10 +33,14 @@ import java.text.NumberFormat
 import java.util.Locale
 import java.io.File
 import android.util.Log
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextAlign
+import com.example.restaurantmanage.data.models.MenuItem
 import com.example.restaurantmanage.util.DrawableResourceUtils
 
 @Composable
-fun MenuItemView(menuItem: MenuItemEntity, navController: NavController) {
+fun MenuItemView(menuItem: MenuItem, navController: NavController) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -201,31 +202,33 @@ fun MenuScreen(
             }
         }
 
-        selectedCategory?.let { category ->
-            LazyColumn(
+        // This is the menuItems for the selected category
+        val menuItems = selectedCategory?.items ?: emptyList()
+
+        if (menuItems.isEmpty()) {
+            Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 8.dp)
+                    .padding(16.dp),
+                contentAlignment = Alignment.Center
             ) {
-                items(category.items.chunked(2)) { rowItems ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 4.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        rowItems.forEach { item ->
-                            Box(modifier = Modifier.weight(1f)) {
-                                MenuItemView(item.toMenuItemEntity(), navController)
-                            }
-                        }
-                        if (rowItems.size == 1) {
-                            Box(modifier = Modifier.weight(1f))
-                        }
-                    }
-                }
-                item {
-                    Spacer(modifier = Modifier.height(80.dp))
+                Text(
+                    text = "Không có món ăn nào trong danh mục này",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center
+                )
+            }
+        } else {
+            // Use LazyVerticalGrid instead of LazyColumn for more even arrangement
+            androidx.compose.foundation.lazy.grid.LazyVerticalGrid(
+                columns = androidx.compose.foundation.lazy.grid.GridCells.Fixed(2),
+                contentPadding = PaddingValues(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxSize()
+            ) {
+                items(menuItems.size) { index ->
+                    MenuItemView(menuItem = menuItems[index], navController = navController)
                 }
             }
         }
@@ -240,14 +243,14 @@ fun CategoryChip(
 ) {
     Surface(
         modifier = Modifier.clickable { onSelected() },
-        shape = CircleShape,
-        color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
-        contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+        shape = RoundedCornerShape(50),
+        color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface,
+        border = BorderStroke(1.dp, if (isSelected) MaterialTheme.colorScheme.primary else Color.Gray)
     ) {
         Text(
             text = category,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-            style = MaterialTheme.typography.labelLarge
+            color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
         )
     }
 }

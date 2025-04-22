@@ -13,7 +13,7 @@ interface MenuItemDao {
     fun getMenuItemsByCategory(categoryId: Int): Flow<List<MenuItemEntity>>
 
     @Query("SELECT * FROM menu_items WHERE id = :id")
-    fun getMenuItemById(id: String): Flow<MenuItemEntity?>
+    suspend fun getMenuItemById(id: String): MenuItemEntity?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertMenuItem(menuItem: MenuItemEntity)
@@ -41,4 +41,10 @@ interface MenuItemDao {
 
     @Query("SELECT * FROM menu_items ORDER BY order_count DESC LIMIT :limit")
     fun getTopSellingItems(limit: Int): Flow<List<MenuItemEntity>>
+
+    @Query("SELECT * FROM menu_items WHERE name LIKE :searchQuery AND in_stock = 1")
+    fun searchMenuItems(searchQuery: String): Flow<List<MenuItemEntity>>
+
+    @Query("UPDATE menu_items SET order_count = :count WHERE id = :id")
+    suspend fun updateOrderCount(id: String, count: Int)
 } 

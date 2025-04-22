@@ -56,6 +56,7 @@ import com.example.restaurantmanage.viewmodels.CartViewModelFactory
 import com.example.restaurantmanage.viewmodels.OrderViewModel
 import com.example.restaurantmanage.viewmodels.ProfileViewModel
 import kotlinx.coroutines.launch
+import com.google.firebase.auth.FirebaseAuth
 
 @Composable
 fun CartScreen(
@@ -298,7 +299,15 @@ fun CartScreen(
                                 
                                 // Tạo đơn hàng từ giỏ hàng với tên người dùng thật
                                 val orderId = orderViewModel.createOrderFromCart(
-                                    cartItems = cartItems,
+                                    cartItems = cartItems.map { cartItem ->
+                                        com.example.restaurantmanage.data.local.entity.CartItemEntity(
+                                            menuItemId = cartItem.menuItem.id,
+                                            userId = FirebaseAuth.getInstance().currentUser?.uid,
+                                            quantity = cartItem.quantity,
+                                            price = cartItem.menuItem.price,
+                                            notes = cartItem.notes ?: ""
+                                        )
+                                    },
                                     totalAmount = totalWithTax,
                                     customerName = customerName
                                 )

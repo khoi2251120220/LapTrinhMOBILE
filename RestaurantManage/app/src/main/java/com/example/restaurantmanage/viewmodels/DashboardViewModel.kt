@@ -12,7 +12,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Calendar
-import java.util.Date
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 
@@ -91,7 +90,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         
         // Tính doanh thu theo ngày
         for (order in orders) {
-            val orderDate = Date(order.startTime)
+            val orderDate = order.orderDate
             val dayOfMonth = format.format(orderDate).toInt()
             if (dailyRevenue.containsKey(dayOfMonth)) {
                 dailyRevenue[dayOfMonth] = dailyRevenue[dayOfMonth]!! + order.totalAmount
@@ -110,11 +109,11 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         val sixtyDaysAgo = currentTime - TimeUnit.DAYS.toMillis(60)
         
         // Doanh thu 30 ngày gần đây
-        val recentRevenue = orders.filter { it.startTime >= thirtyDaysAgo }
+        val recentRevenue = orders.filter { it.orderDate.time >= thirtyDaysAgo }
             .sumOf { it.totalAmount }
         
         // Doanh thu 30-60 ngày trước
-        val previousRevenue = orders.filter { it.startTime in (sixtyDaysAgo until thirtyDaysAgo) }
+        val previousRevenue = orders.filter { it.orderDate.time in (sixtyDaysAgo until thirtyDaysAgo) }
             .sumOf { it.totalAmount }
         
         // Tính tốc độ tăng trưởng
@@ -131,11 +130,11 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         val sixtyDaysAgo = currentTime - TimeUnit.DAYS.toMillis(60)
         
         // Lợi nhuận 30 ngày gần đây (giả sử 70% doanh thu)
-        val recentProfit = orders.filter { it.startTime >= thirtyDaysAgo }
+        val recentProfit = orders.filter { it.orderDate.time >= thirtyDaysAgo }
             .sumOf { it.totalAmount } * 0.7
         
         // Lợi nhuận 30-60 ngày trước
-        val previousProfit = orders.filter { it.startTime in (sixtyDaysAgo until thirtyDaysAgo) }
+        val previousProfit = orders.filter { it.orderDate.time in (sixtyDaysAgo until thirtyDaysAgo) }
             .sumOf { it.totalAmount } * 0.7
         
         // Tính tốc độ tăng trưởng

@@ -10,14 +10,23 @@ interface BookingDao {
     @Query("SELECT * FROM bookings")
     fun getAllBookings(): Flow<List<BookingEntity>>
 
-    @Query("SELECT * FROM bookings WHERE status = :status")
-    fun getBookingsByStatus(status: String): Flow<List<BookingEntity>>
+    @Query("SELECT * FROM bookings WHERE id = :id")
+    suspend fun getBookingById(id: String): BookingEntity?
+    
+    @Query("SELECT * FROM bookings WHERE userId = :userId")
+    fun getBookingsByUserId(userId: String): Flow<List<BookingEntity>>
 
     @Query("SELECT * FROM bookings WHERE tableId = :tableId")
     fun getBookingsByTableId(tableId: Int): Flow<List<BookingEntity>>
+    
+    @Query("SELECT * FROM bookings WHERE status = :status")
+    fun getBookingsByStatus(status: String): Flow<List<BookingEntity>>
 
-    @Query("SELECT * FROM bookings WHERE time BETWEEN :startDate AND :endDate")
-    fun getBookingsByDateRange(startDate: Date, endDate: Date): Flow<List<BookingEntity>>
+    @Query("SELECT EXISTS(SELECT 1 FROM bookings WHERE tableId = :tableId AND bookingTime BETWEEN :startTime AND :endTime AND status != 'CANCELLED')")
+    suspend fun isTableBooked(tableId: Int, startTime: Date, endTime: Date): Boolean
+    
+    @Query("SELECT * FROM bookings WHERE tableId = :tableId AND status = 'CONFIRMED' LIMIT 1")
+    suspend fun getActiveBookingForTable(tableId: Int): BookingEntity?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertBooking(booking: BookingEntity)
@@ -27,18 +36,7 @@ interface BookingDao {
 
     @Delete
     suspend fun deleteBooking(booking: BookingEntity)
-
+    
     @Query("UPDATE bookings SET status = :status WHERE id = :bookingId")
-    suspend fun updateBookingStatus(bookingId: Int, status: String)
-
-    @Transaction
-    @Query("""
-        SELECT EXISTS (
-            SELECT 1 FROM bookings 
-            WHERE tableId = :tableId 
-            AND time BETWEEN :startTime AND :endTime
-            AND status IN ('PENDING', 'CONFIRMED')
-        )
-    """)
-    suspend fun isTableBooked(tableId: Int, startTime: Date, endTime: Date): Boolean
+    suspend fun updateBookingStatus(bookingId: String, status: String)
 }

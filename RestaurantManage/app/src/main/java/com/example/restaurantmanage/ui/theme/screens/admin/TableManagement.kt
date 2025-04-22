@@ -1,6 +1,11 @@
 package com.example.restaurantmanage.ui.theme.screens.admin
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -19,6 +24,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FloatingActionButton
@@ -42,8 +48,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -54,6 +63,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.example.restaurantmanage.R
 import com.example.restaurantmanage.data.local.RestaurantDatabase
 import com.example.restaurantmanage.data.local.entity.TableEntity
 import com.example.restaurantmanage.ui.theme.PrimaryColor
@@ -61,6 +71,11 @@ import com.example.restaurantmanage.ui.theme.RestaurantManageTheme
 import com.example.restaurantmanage.ui.theme.components.AdminAppBar
 import com.example.restaurantmanage.ui.theme.components.NavAdmin
 import com.example.restaurantmanage.viewmodels.TableManagementViewModel
+import com.example.restaurantmanage.util.DrawableResourceUtils
+import coil.compose.rememberAsyncImagePainter
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @Composable
 fun TableManagementScreen(navController: NavController) {
@@ -78,11 +93,14 @@ fun TableManagementScreen(navController: NavController) {
 
     var selectedTab by remember { mutableIntStateOf(0) }
     var showAddTableDialog by remember { mutableStateOf(false) }
+    var showBookingDetailsDialog by remember { mutableStateOf(false) }
+    var selectedTable by remember { mutableStateOf<TableEntity?>(null) }
 
     val tables by viewModel.tables.collectAsState(initial = emptyList())
     val availableTables by viewModel.availableTables.collectAsState(initial = emptyList())
     val reservedTables by viewModel.reservedTables.collectAsState(initial = emptyList())
     val occupiedTables by viewModel.occupiedTables.collectAsState(initial = emptyList())
+    val selectedTableBooking by viewModel.selectedTableBooking.collectAsState(initial = null)
 
     val tabs = listOf(
         "Tất cả (${tables.size})",
@@ -176,7 +194,12 @@ fun TableManagementScreen(navController: NavController) {
                         TableCard(
                             table = table,
                             onClick = {
-                                // Xử lý khi nhấn vào bàn
+                                if (table.status == "RESERVED") {
+                                    // Khi chọn bàn đã đặt, load thông tin đặt bàn
+                                    selectedTable = table
+                                    viewModel.loadBookingForTable(table.id)
+                                    showBookingDetailsDialog = true
+                                }
                             }
                         )
                     }
@@ -188,6 +211,14 @@ fun TableManagementScreen(navController: NavController) {
     if (showAddTableDialog) {
         var tableName by remember { mutableStateOf("") }
         var capacity by remember { mutableStateOf("") }
+        var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
+        
+        // Image picker launcher
+        val imagePickerLauncher = rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.GetContent()
+        ) { uri: Uri? ->
+            selectedImageUri = uri
+        }
 
         AlertDialog(
             onDismissRequest = { showAddTableDialog = false },
@@ -210,16 +241,64 @@ fun TableManagementScreen(navController: NavController) {
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier.fillMaxWidth()
                     )
+                    
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    // Image selection
+                    Text(
+                        text = "Hình ảnh bàn",
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+                    
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(120.dp)
+                            .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(8.dp))
+                            .clip(RoundedCornerShape(8.dp))
+                            .clickable { imagePickerLauncher.launch("image/*") },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (selectedImageUri != null) {
+                            Image(
+                                painter = rememberAsyncImagePainter(selectedImageUri),
+                                contentDescription = "Selected Table Image",
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                            )
+                        } else {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Add,
+                                    contentDescription = "Add Image",
+                                    tint = MaterialTheme.colorScheme.outline
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = "Chọn hình ảnh",
+                                    color = MaterialTheme.colorScheme.outline,
+                                    fontSize = 12.sp
+                                )
+                            }
+                        }
+                    }
                 }
             },
             confirmButton = {
                 TextButton(
                     onClick = {
-                        if (tableName.isNotEmpty() && capacity.isNotEmpty()) {
-                            viewModel.addTable(tableName, capacity.toInt())
+                        if (tableName.isNotEmpty() && capacity.isNotEmpty() && selectedImageUri != null) {
+                            // Store the selected image and add table with image reference
+                            val imagePathStr = selectedImageUri.toString()
+                            viewModel.addTableWithImage(tableName, capacity.toInt(), imagePathStr)
                             showAddTableDialog = false
                         }
-                    }
+                    },
+                    enabled = tableName.isNotEmpty() && capacity.isNotEmpty() && selectedImageUri != null
                 ) {
                     Text("Thêm")
                 }
@@ -227,6 +306,64 @@ fun TableManagementScreen(navController: NavController) {
             dismissButton = {
                 TextButton(onClick = { showAddTableDialog = false }) {
                     Text("Hủy")
+                }
+            }
+        )
+    }
+
+    // Dialog hiển thị chi tiết đặt bàn
+    if (showBookingDetailsDialog && selectedTable != null && selectedTableBooking != null) {
+        AlertDialog(
+            onDismissRequest = { showBookingDetailsDialog = false },
+            title = { Text("Chi tiết đặt bàn - ${selectedTable?.name}") },
+            text = {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(8.dp)
+                ) {
+                    val dateFormat = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale("vi"))
+                    
+                    Text(
+                        text = "Thông tin khách hàng",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    
+                    Text(text = "Tên: ${selectedTableBooking?.customerName}")
+                    Text(text = "SĐT: ${selectedTableBooking?.phoneNumber}")
+                    Text(text = "Số người: ${selectedTableBooking?.numberOfGuests}")
+                    Text(
+                        text = "Thời gian: ${dateFormat.format(selectedTableBooking?.bookingTime ?: Date())}"
+                    )
+                    
+                    if (!selectedTableBooking?.note.isNullOrEmpty()) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(text = "Ghi chú: ${selectedTableBooking?.note}")
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = { showBookingDetailsDialog = false }
+                ) {
+                    Text("Đóng")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        selectedTableBooking?.let { booking ->
+                            viewModel.cancelBooking(booking)
+                            showBookingDetailsDialog = false
+                        }
+                    },
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = Color(0xFFF44336) // Red
+                    )
+                ) {
+                    Text("Hủy đặt bàn")
                 }
             }
         )
@@ -271,6 +408,46 @@ fun TableCard(
             modifier = Modifier.padding(12.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            // Display table image
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(80.dp)
+                    .clip(RoundedCornerShape(8.dp)),
+                contentAlignment = Alignment.Center
+            ) {
+                if (table.image.isNotEmpty()) {
+                    if (table.image.startsWith("content://") || table.image.startsWith("file://")) {
+                        // Load from URI
+                        Image(
+                            painter = rememberAsyncImagePainter(Uri.parse(table.image)),
+                            contentDescription = table.name,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        // Try to load as drawable resource
+                        val imageRes = DrawableResourceUtils.getDrawableResourceId(table.image) ?: R.drawable.table_image
+                        Image(
+                            painter = painterResource(id = imageRes),
+                            contentDescription = table.name,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
+                } else {
+                    // Default placeholder
+                    Image(
+                        painter = painterResource(id = R.drawable.table_image),
+                        contentDescription = table.name,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
             Text(
                 text = table.name,
                 fontSize = 16.sp,

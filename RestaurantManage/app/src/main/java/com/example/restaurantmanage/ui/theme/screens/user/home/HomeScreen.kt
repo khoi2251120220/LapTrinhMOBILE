@@ -32,6 +32,7 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -50,15 +51,13 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.restaurantmanage.R
 import com.example.restaurantmanage.data.local.RestaurantDatabase
-import com.example.restaurantmanage.data.models.MenuItem
 import com.example.restaurantmanage.util.DrawableResourceUtils
-import com.example.restaurantmanage.viewmodels.CartViewModel
-import com.example.restaurantmanage.viewmodels.CartViewModelFactory
 import com.example.restaurantmanage.viewmodels.HomeViewModel
 import com.example.restaurantmanage.viewmodels.HomeViewModelFactory
 import java.text.NumberFormat
 import java.util.Locale
 import android.util.Log
+import com.example.restaurantmanage.data.local.entity.MenuItemEntity
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -67,13 +66,17 @@ fun HomeScreen(
     homeViewModel: HomeViewModel = viewModel(
         factory = HomeViewModelFactory(RestaurantDatabase.getDatabase(LocalContext.current))
     ),
-    cartViewModel: CartViewModel = viewModel(
-        factory = CartViewModelFactory(RestaurantDatabase.getDatabase(LocalContext.current))
-    )
+
 ) {
     val featuredItems by homeViewModel.featuredItems.collectAsState()
     val categories by homeViewModel.categories.collectAsState()
     val searchText = remember { mutableStateOf(TextFieldValue("")) }
+    
+    // Trigger data loading when screen is first displayed
+    LaunchedEffect(Unit) {
+        homeViewModel.loadMenuItems()
+        homeViewModel.loadCategories()
+    }
     
     // Log để debug
     Log.d("HomeScreen", "Categories size: ${categories.size}")
@@ -159,7 +162,7 @@ fun HomeScreen(
                                 onItemClick = { 
                                     if (item.inStock) {
                                         // Navigate to detail screen when clicked
-                                        navController.navigate("food_detail/${item.id}")
+                                        navController.navigate("detail/${item.id}")
                                     }
                                 }
                             )
@@ -193,23 +196,6 @@ fun HomeScreen(
 
             // Hiển thị danh sách món ăn theo dạng lưới 2 cột
             item {
-                // Debug với text
-                if (categories.isEmpty()) {
-                    Text(
-                        text = "Không có danh mục nào",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color.Red
-                    )
-                }
-                
-                val allItems = categories.flatMap { it.items }
-
-                Text(
-                    text = "Tổng số món: ${allItems.size}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color.Gray
-                )
-
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
@@ -227,7 +213,7 @@ fun HomeScreen(
                                 imageRes = DrawableResourceUtils.getDrawableResourceId(item.image) ?: R.drawable.placeholder_food,
                                 modifier = Modifier.weight(1f),
                                 onItemClick = {
-                                    navController.navigate("food_detail/${item.id}")
+                                    navController.navigate("detail/${item.id}")
                                 }
                             )
                         }
@@ -293,7 +279,7 @@ fun HomeScreen(
                                 imageRes = DrawableResourceUtils.getDrawableResourceId(item.image) ?: R.drawable.drink,
                                 modifier = Modifier.weight(1f),
                                 onItemClick = {
-                                    navController.navigate("food_detail/${item.id}")
+                                    navController.navigate("detail/${item.id}")
                                 }
                             )
                         }
@@ -317,48 +303,6 @@ fun HomeScreen(
                 }
             }
 
-            // Danh sách danh mục (Categories)
-            categories.forEach { category ->
-                if (category.items.isNotEmpty()) {
-                    item {
-                        Text(
-                            category.name,
-                            style = MaterialTheme.typography.headlineMedium,
-                            modifier = Modifier.padding(vertical = 16.dp)
-                        )
-                    }
-                    item {
-                        Column {
-                            category.items.chunked(2).forEach { rowItems ->
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 8.dp),
-                                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                                ) {
-                                    rowItems.forEach { item ->
-                                        Box(modifier = Modifier.weight(1f)) {
-                                            MenuItemCard(
-                                                item = item,
-                                                onItemClick = { 
-                                                    if (item.inStock) {
-                                                        // Navigate to detail screen when clicked
-                                                        navController.navigate("food_detail/${item.id}")
-                                                    }
-                                                }
-                                            )
-                                        }
-                                    }
-                                    if (rowItems.size == 1) {
-                                        Spacer(modifier = Modifier.weight(1f))
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
             // Bottom spacing
             item {
                 Spacer(modifier = Modifier.height(80.dp))
@@ -369,7 +313,7 @@ fun HomeScreen(
 
 @Composable
 fun FeaturedItemCard(
-    item: MenuItem,
+    item: MenuItemEntity,
     onItemClick: () -> Unit
 ) {
     Column(
@@ -419,79 +363,6 @@ fun FeaturedItemCard(
             style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier.padding(4.dp)
         )
-    }
-}
-
-@Composable
-fun MenuItemCard(
-    item: MenuItem,
-    modifier: Modifier = Modifier,
-    onItemClick: () -> Unit
-) {
-    Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .clickable(onClick = onItemClick),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        shape = RoundedCornerShape(8.dp)
-    ) {
-        Column(
-            modifier = Modifier.padding(8.dp)
-        ) {
-            Box {
-                // Load image with DrawableResourceUtils
-                val imageRes = if (item.image.isNotEmpty()) {
-                    DrawableResourceUtils.getDrawableResourceId(item.image) ?: R.drawable.placeholder
-                } else {
-                    R.drawable.placeholder
-                }
-                
-                Image(
-                    painter = painterResource(id = imageRes),
-                    contentDescription = item.name,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(120.dp)
-                        .clip(RoundedCornerShape(8.dp)),
-                    contentScale = ContentScale.Crop
-                )
-                if (!item.inStock) {
-                    Surface(
-                        modifier = Modifier.matchParentSize(),
-                        color = Color.Black.copy(alpha = 0.6f)
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Text(
-                                text = "Hết hàng",
-                                color = Color.White,
-                                style = MaterialTheme.typography.titleMedium
-                            )
-                        }
-                    }
-                }
-            }
-            Text(
-                text = item.name,
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(top = 8.dp)
-            )
-            Text(
-                text = formatPrice(item.price),
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(top = 4.dp),
-                color = MaterialTheme.colorScheme.primary
-            )
-            if (item.description.isNotEmpty()) {
-                Text(
-                    text = item.description,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(top = 4.dp)
-                )
-            }
-        }
     }
 }
 

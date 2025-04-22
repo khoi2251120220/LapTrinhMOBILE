@@ -36,7 +36,13 @@ class MainActivity : ComponentActivity() {
                     val database = RestaurantDatabase.getDatabase(this)
                     val menuItemDao = database.menuItemDao()
 
-                    val startDestination = "login_screen"
+                    // Set start destination to login by default
+                    var startDestination = "login_screen"
+                    
+                    // Check if user is already logged in
+                    if (auth.currentUser != null) {
+                        startDestination = "checking_role"
+                    }
 
                     NavHost(navController = navController, startDestination = startDestination) {
                         composable("login_screen") {
@@ -58,20 +64,24 @@ class MainActivity : ComponentActivity() {
                         composable("admin_screen") {
                             MainScreenAdmin()
                         }
-                    }
-                    
-                    if (auth.currentUser != null) {
-                        auth.currentUser?.uid?.let { userId ->
-                            firestore.collection("users").document(userId).get()
-                                .addOnSuccessListener { document ->
-                                    val role = document.getString("role") ?: "user"
-                                    val destination = if (role == "admin") "admin_screen" else "user_screen"
-                                    
-                                    navController.navigate(destination) {
-                                        popUpTo("login_screen") { inclusive = true }
-                                        launchSingleTop = true
-                                    }
+                        composable("checking_role") {
+                            // Intermediate screen that will redirect based on user role
+                            androidx.compose.runtime.LaunchedEffect(Unit) {
+                                auth.currentUser?.uid?.let { userId ->
+                                    firestore.collection("users").document(userId).get()
+                                        .addOnSuccessListener { document ->
+                                            val role = document.getString("role") ?: "user"
+                                            val destination = if (role == "admin") "admin_screen" else "user_screen"
+                                            
+                                            navController.navigate(destination) {
+                                                popUpTo("login_screen") { inclusive = true }
+                                                launchSingleTop = true
+                                            }
+                                        }
                                 }
+                            }
+                            // Show loading indicator while checking role
+                            androidx.compose.material3.CircularProgressIndicator()
                         }
                     }
                 }

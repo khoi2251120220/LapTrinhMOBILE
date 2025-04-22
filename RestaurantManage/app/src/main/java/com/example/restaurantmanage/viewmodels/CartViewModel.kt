@@ -3,17 +3,20 @@ package com.example.restaurantmanage.viewmodels
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.restaurantmanage.data.local.dao.CartItemDao
+import com.example.restaurantmanage.data.local.dao.MenuItemDao
 import com.example.restaurantmanage.data.local.entity.CartItemEntity
 import com.example.restaurantmanage.data.models.CartItem
 import com.example.restaurantmanage.data.models.MenuItem
+import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.map
+
 import kotlinx.coroutines.launch
 
 open class CartViewModel(
-    private val cartItemDao: CartItemDao
+    private val cartItemDao: CartItemDao,
+    private val menuItemDao: MenuItemDao
 ) : ViewModel() {
     private val _cartItems = MutableStateFlow<List<CartItem>>(emptyList())
     open val cartItems: StateFlow<List<CartItem>> = _cartItems.asStateFlow()
@@ -40,38 +43,36 @@ open class CartViewModel(
         loadCartItems()
     }
 
-    private fun CartItemEntity.toCartItem(): CartItem {
+    private suspend fun CartItemEntity.toCartItem(): CartItem {
+        val menuItemEntity = menuItemDao.getMenuItemById(menuItemId)
         val menuItem = MenuItem(
             id = menuItemId,
-            name = name,
+            name = menuItemEntity?.name ?: "",
             price = price,
-            categoryId = categoryId,
-            orderCount = 0,
-            inStock = true,
-            image = image,
-            description = description ?: "",
-            imageResId = 0
+            categoryId = menuItemEntity?.categoryId ?: 0,
+            orderCount = menuItemEntity?.orderCount ?: 0,
+            inStock = menuItemEntity?.inStock ?: true,
+            image = menuItemEntity?.image ?: "",
+            description = menuItemEntity?.description ?: ""
         )
-        return CartItem(menuItem, quantity)
+        return CartItem(menuItem, quantity, notes)
     }
 
     private fun CartItem.toCartItemEntity(): CartItemEntity {
         return CartItemEntity(
             menuItemId = menuItem.id,
-            name = menuItem.name,
+            userId = FirebaseAuth.getInstance().currentUser?.uid,
+            quantity = quantity,
             price = menuItem.price,
-            categoryId = menuItem.categoryId,
-            image = menuItem.image,
-            description = menuItem.description,
-            quantity = quantity
+            notes = notes
         )
     }
 
     private fun loadCartItems() {
         viewModelScope.launch {
             cartItemDao.getAllCartItems()
-                .map { entities -> entities.map { it.toCartItem() } }
-                .collect { items ->
+                .collect { entities -> 
+                    val items = entities.map { entity -> entity.toCartItem() }
                     _cartItems.value = items
                     updateTotal()
                 }
