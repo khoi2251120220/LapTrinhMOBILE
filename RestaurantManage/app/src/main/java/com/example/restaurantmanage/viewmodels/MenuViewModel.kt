@@ -38,7 +38,7 @@ class MenuViewModel(
         loadTopSellingItems()
     }
 
-    fun loadMenuData() {
+    private fun loadMenuData() {
         viewModelScope.launch {
             try {
                 _isLoading.value = true

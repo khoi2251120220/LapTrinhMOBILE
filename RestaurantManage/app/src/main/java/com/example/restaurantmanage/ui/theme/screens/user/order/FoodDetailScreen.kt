@@ -146,7 +146,7 @@ fun FoodDetailScreen(
                 ) {
                     
                     if (it.image.isNotEmpty() && !it.image.startsWith("/")) {
-                        // Sử dụng DrawableResourceUtils thay vì getIdentifier
+                        // Sử dụng DrawableResourceUtils
                         val resourceId = DrawableResourceUtils.getDrawableResourceId(it.image)
                         
                         if (resourceId != null) {

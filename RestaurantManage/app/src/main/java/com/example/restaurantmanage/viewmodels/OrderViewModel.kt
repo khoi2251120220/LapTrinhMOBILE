@@ -11,15 +11,13 @@ import com.example.restaurantmanage.data.local.dao.OrderItemDao
 import com.example.restaurantmanage.data.local.entity.CartItemEntity
 import com.example.restaurantmanage.data.local.entity.OrderEntity
 import com.example.restaurantmanage.data.local.entity.OrderItemEntity
+import com.example.restaurantmanage.data.local.entity.OrderItemWithMenuDetails
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import java.util.Date
-import java.util.UUID
-import java.text.SimpleDateFormat
-import java.util.Locale
 
 class OrderViewModel(
     private val database: RestaurantDatabase,
@@ -29,6 +27,7 @@ class OrderViewModel(
     private val menuItemDao: MenuItemDao
 ) : ViewModel() {
     
+    // State for current order being viewed
     private val _currentOrderId = MutableStateFlow<String?>(null)
     val currentOrderId: StateFlow<String?> = _currentOrderId
     
@@ -37,6 +36,10 @@ class OrderViewModel(
     
     private val _customerName = MutableStateFlow("")
     val customerName: StateFlow<String> = _customerName
+    
+    // State for order items with menu details
+    private val _orderItems = MutableStateFlow<List<OrderItemWithMenuDetails>>(emptyList())
+    val orderItems: StateFlow<List<OrderItemWithMenuDetails>> = _orderItems
     
     // Renamed to avoid name clash with the function below
     val orders = orderDao.getAllOrders()
@@ -73,6 +76,20 @@ class OrderViewModel(
     
     fun getOrderById(id: String): Flow<List<OrderItemEntity>> {
         return orderItemDao.getOrderItemsByOrderId(id)
+    }
+    
+    // Load all order items with their menu details for a specific order
+    fun loadOrderItems(orderId: String) {
+        viewModelScope.launch {
+            try {
+                // Get all order items for this order ID
+                val items = orderItemDao.getOrderItemsWithMenuDetails(orderId)
+                _orderItems.value = items
+            } catch (e: Exception) {
+                // Handle errors if needed
+                _orderItems.value = emptyList()
+            }
+        }
     }
     
     // Tạo đơn hàng mới từ giỏ hàng

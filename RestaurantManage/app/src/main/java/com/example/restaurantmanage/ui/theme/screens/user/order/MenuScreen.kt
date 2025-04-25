@@ -139,14 +139,14 @@ fun MenuItemView(menuItem: MenuItem, navController: NavController) {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = formatPrice(menuItem.price),
+                        text = formatPrice(menuItem.price * 1.1),
                         fontSize = 12.sp,
                         textDecoration = TextDecoration.LineThrough,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = formatPrice(menuItem.price * 0.75),
+                        text = formatPrice(menuItem.price ),
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
