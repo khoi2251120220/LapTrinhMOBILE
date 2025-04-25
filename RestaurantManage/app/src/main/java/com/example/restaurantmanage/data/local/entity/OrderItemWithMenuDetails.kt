@@ -11,5 +11,9 @@ data class OrderItemWithMenuDetails(
     val quantity: Int,
     val price: Double,
     val notes: String,
-    val image: String? = null
+    val image: String? = null,
+    val description: String? = null,
+    val categoryId: Int? = null,
+    val inStock: Boolean? = true,
+    val orderCount: Int? = 0
 ) 

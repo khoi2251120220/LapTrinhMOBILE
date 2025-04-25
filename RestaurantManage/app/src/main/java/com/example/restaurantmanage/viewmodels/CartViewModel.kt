@@ -21,6 +21,9 @@ open class CartViewModel(
     private val _cartItems = MutableStateFlow<List<CartItem>>(emptyList())
     open val cartItems: StateFlow<List<CartItem>> = _cartItems.asStateFlow()
 
+    private val _outOfStockItems = MutableStateFlow<List<CartItem>>(emptyList())
+    open val outOfStockItems: StateFlow<List<CartItem>> = _outOfStockItems.asStateFlow()
+
     private val _total = MutableStateFlow(0.0)
     open val total: StateFlow<Double> = _total.asStateFlow()
 
@@ -74,8 +77,15 @@ open class CartViewModel(
                 .collect { entities -> 
                     val items = entities.map { entity -> entity.toCartItem() }
                     
+                    // Separate items into in-stock and out-of-stock
+                    val inStockItems = items.filter { it.menuItem.inStock }
+                    val outOfStockItems = items.filter { !it.menuItem.inStock }
+                    
+                    // Update out-of-stock items state
+                    _outOfStockItems.value = outOfStockItems
+                    
                     // Nhóm các mục giống nhau lại với nhau
-                    val groupedItems = items.groupBy { item -> item.menuItem.id }
+                    val groupedItems = inStockItems.groupBy { item -> item.menuItem.id }
                         .map { (_, itemsForId) ->
                             // Tổng hợp số lượng cho cùng một sản phẩm
                             val totalQuantity = itemsForId.sumOf { it.quantity }
@@ -100,6 +110,13 @@ open class CartViewModel(
 
     fun addToCart(item: MenuItem) {
         viewModelScope.launch {
+            // Always check real-time stock status from the database
+            val menuItemEntity = menuItemDao.getMenuItemById(item.id)
+            if (menuItemEntity == null || !menuItemEntity.inStock) {
+                // Item is out of stock - don't add to cart
+                return@launch
+            }
+            
             val currentItems = _cartItems.value.toMutableList()
             val existingItem = currentItems.find { it.menuItem.id == item.id }
             
@@ -125,7 +142,12 @@ open class CartViewModel(
                 }
             } else {
                 // Thêm món ăn mới vào giỏ hàng
-                val newCartItem = CartItem(item, 1)
+                val newCartItem = CartItem(
+                    // Create MenuItem with current stock status
+                    menuItem = item.copy(inStock = menuItemEntity.inStock),
+                    quantity = 1,
+                    notes = null
+                )
                 currentItems.add(newCartItem)
                 cartItemDao.insertCartItem(newCartItem.toCartItemEntity())
             }
@@ -147,11 +169,25 @@ open class CartViewModel(
         _isPaymentDropdownExpanded.value = false
     }
 
+    // Add a function to refresh the stock status of all cart items
+    fun refreshStockStatus() {
+        viewModelScope.launch {
+            // Reload all items from the database to get the latest stock status
+            loadCartItems()
+        }
+    }
+    
     fun confirmPayment() {
         viewModelScope.launch {
-            cartItemDao.clearCart()
-            _cartItems.value = emptyList()
-            updateTotal()
+            // First refresh stock status to make sure we only process in-stock items
+            refreshStockStatus()
+            
+            // Only process if there are no out-of-stock items
+            if (_outOfStockItems.value.isEmpty()) {
+                cartItemDao.clearCart()
+                _cartItems.value = emptyList()
+                updateTotal()
+            }
         }
     }
 
@@ -198,6 +234,16 @@ open class CartViewModel(
                 
                 updateTotal()
             }
+        }
+    }
+
+    fun removeAllOutOfStockItems() {
+        viewModelScope.launch {
+            outOfStockItems.value.forEach { item ->
+                cartItemDao.deleteCartItemByMenuId(item.menuItem.id)
+            }
+            _outOfStockItems.value = emptyList()
+            loadCartItems()
         }
     }
 }

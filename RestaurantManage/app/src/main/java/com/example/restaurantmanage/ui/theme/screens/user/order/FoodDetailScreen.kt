@@ -253,7 +253,8 @@ fun FoodDetailScreen(
                             onClick = { if (quantity > 1) quantity-- },
                             modifier = Modifier.size(40.dp),
                             shape = RoundedCornerShape(4.dp),
-                            contentPadding = PaddingValues(0.dp)
+                            contentPadding = PaddingValues(0.dp),
+                            enabled = it.inStock
                         ) {
                             Text("-", fontSize = 20.sp)
                         }
@@ -268,10 +269,22 @@ fun FoodDetailScreen(
                             onClick = { quantity++ },
                             modifier = Modifier.size(40.dp),
                             shape = RoundedCornerShape(4.dp),
-                            contentPadding = PaddingValues(0.dp)
+                            contentPadding = PaddingValues(0.dp),
+                            enabled = it.inStock
                         ) {
                             Text("+", fontSize = 20.sp)
                         }
+                    }
+
+                    // Hiển thị thông báo "Hết hàng" khi sản phẩm không còn
+                    if (!it.inStock) {
+                        Text(
+                            text = "Món ăn này hiện đã hết",
+                            color = Color.Red,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp,
+                            modifier = Modifier.padding(bottom = 16.dp)
+                        )
                     }
 
                     Button(
@@ -283,7 +296,7 @@ fun FoodDetailScreen(
                                 price = it.price,
                                 categoryId = it.categoryId,
                                 orderCount = 0,
-                                inStock = true,
+                                inStock = it.inStock,
                                 image = it.image,
                                 description = it.description,
                                 imageResId = 0
@@ -304,10 +317,11 @@ fun FoodDetailScreen(
                         colors = ButtonDefaults.buttonColors(
                             containerColor = Color(0xFF4CAF50),
                             contentColor = Color.White
-                        )
+                        ),
+                        enabled = it.inStock
                     ) {
                         Text(
-                            "Thêm vào giỏ hàng",
+                            text = if (it.inStock) "Thêm vào giỏ hàng" else "Món này đã hết",
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Medium
                         )

@@ -15,9 +15,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Add
@@ -31,8 +30,10 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
@@ -75,7 +76,13 @@ fun CartScreen(
         factory = ProfileViewModel.Factory(RestaurantDatabase.getDatabase(LocalContext.current))
     )
 ) {
+    // Refresh stock status when the screen is shown
+    LaunchedEffect(key1 = true) {
+        cartViewModel.refreshStockStatus()
+    }
+    
     val cartItems by cartViewModel.cartItems.collectAsState()
+    val outOfStockItems by cartViewModel.outOfStockItems.collectAsState()
     val total by cartViewModel.total.collectAsState()
     val tax by cartViewModel.tax.collectAsState()
     val totalWithTax by cartViewModel.totalWithTax.collectAsState()
@@ -88,6 +95,9 @@ fun CartScreen(
     
     // Coroutine scope
     val scope = rememberCoroutineScope()
+    
+    // Check if there are any out-of-stock items
+    val hasOutOfStockItems = outOfStockItems.isNotEmpty()
 
     Scaffold(
         topBar = {
@@ -98,15 +108,90 @@ fun CartScreen(
             )
         }
     ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .background(Color(0xFFF5F5F5))
-        ) {
-            if (cartItems.isEmpty()) {
-                EmptyCartView(navController)
-            } else {
+        if (cartItems.isEmpty() && outOfStockItems.isEmpty()) {
+            EmptyCartView(navController)
+        } else {
+            // Use rememberScrollState and Column with verticalScroll for the main container
+            val scrollState = androidx.compose.foundation.rememberScrollState()
+            
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .background(Color(0xFFF5F5F5))
+                    .verticalScroll(scrollState)
+            ) {
+                // Show warning for out-of-stock items
+                if (hasOutOfStockItems) {
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = Color(0xFFFFEEEE)
+                        )
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(16.dp)
+                        ) {
+                            Text(
+                                text = "Một số món ăn trong giỏ hàng đã hết",
+                                color = Color.Red,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 16.sp
+                            )
+                            
+                            Spacer(modifier = Modifier.height(8.dp))
+                            
+                            Text(
+                                text = "Vui lòng xóa các món ăn đã hết trước khi thanh toán:",
+                                color = Color.Red,
+                                fontSize = 14.sp
+                            )
+                            
+                            // List out-of-stock items
+                            outOfStockItems.forEach { item ->
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 4.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "• ${item.menuItem.name}",
+                                        color = Color.Red,
+                                        fontSize = 14.sp
+                                    )
+                                    
+                                    Spacer(modifier = Modifier.weight(1f))
+                                    
+                                    Button(
+                                        onClick = { cartViewModel.removeFromCart(item) },
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = Color.Red
+                                        ),
+                                        modifier = Modifier.height(32.dp)
+                                    ) {
+                                        Text("Xóa", fontSize = 12.sp)
+                                    }
+                                }
+                            }
+                            
+                            Spacer(modifier = Modifier.height(8.dp))
+                            
+                            Button(
+                                onClick = { cartViewModel.removeAllOutOfStockItems() },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color.Red
+                                ),
+                                modifier = Modifier.align(Alignment.End)
+                            ) {
+                                Text("Xóa tất cả món đã hết")
+                            }
+                        }
+                    }
+                }
+                
                 // Payment method selection
                 Card(
                     modifier = Modifier
@@ -212,14 +297,13 @@ fun CartScreen(
                     )
                 }
                 
-                // Cart items
-                LazyColumn(
+                // Cart items - replace LazyColumn with a regular Column when using verticalScroll
+                Column(
                     modifier = Modifier
-                        .weight(1f)
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp)
                 ) {
-                    items(cartItems) { cartItem ->
+                    cartItems.forEach { cartItem ->
                         PaymentCartItemRow(cartItem = cartItem, cartViewModel = cartViewModel)
                     }
                 }
@@ -335,15 +419,19 @@ fun CartScreen(
                         .padding(16.dp)
                         .height(56.dp),
                     shape = RoundedCornerShape(8.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.Black)
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Black),
+                    enabled = !hasOutOfStockItems && cartItems.isNotEmpty()
                 ) {
                     Text(
-                        text = "XÁC NHẬN THANH TOÁN",
+                        text = if (hasOutOfStockItems) "XÓA MÓN HẾT HÀNG ĐỂ THANH TOÁN" else "XÁC NHẬN THANH TOÁN",
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White
                     )
                 }
+                
+                // Spacer at the bottom to ensure content isn't hidden behind system UI
+                Spacer(modifier = Modifier.height(40.dp))
                 
                 // Dropdown for payment methods if expanded
                 DropdownMenu(
@@ -429,12 +517,16 @@ fun PaymentCartItemRow(
         factory = CartViewModelFactory(RestaurantDatabase.getDatabase(LocalContext.current))
     )
 ) {
+    val isOutOfStock = !cartItem.menuItem.inStock
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp),
         shape = RoundedCornerShape(8.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+        colors = CardDefaults.cardColors(
+            containerColor = if (isOutOfStock) Color(0xFFFFEEEE) else Color.White
+        )
     ) {
         Column(
             modifier = Modifier
@@ -446,16 +538,35 @@ fun PaymentCartItemRow(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 // Hình ảnh món ăn
-                Image(
-                    painter = painterResource(
-                        id = DrawableResourceUtils.getDrawableResourceId(cartItem.menuItem.image) ?: R.drawable.placeholder
-                    ),
-                    contentDescription = cartItem.menuItem.name,
-                    modifier = Modifier
-                        .size(60.dp)
-                        .clip(RoundedCornerShape(6.dp)),
-                    contentScale = ContentScale.Crop
-                )
+                Box {
+                    Image(
+                        painter = painterResource(
+                            id = DrawableResourceUtils.getDrawableResourceId(cartItem.menuItem.image) ?: R.drawable.placeholder
+                        ),
+                        contentDescription = cartItem.menuItem.name,
+                        modifier = Modifier
+                            .size(60.dp)
+                            .clip(RoundedCornerShape(6.dp)),
+                        contentScale = ContentScale.Crop
+                    )
+                    
+                    // Out of stock overlay
+                    if (isOutOfStock) {
+                        Surface(
+                            modifier = Modifier.matchParentSize(),
+                            color = Color.Black.copy(alpha = 0.5f)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Text(
+                                    text = "HẾT HÀNG",
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 10.sp
+                                )
+                            }
+                        }
+                    }
+                }
                 
                 Spacer(modifier = Modifier.width(12.dp))
                 
@@ -463,12 +574,27 @@ fun PaymentCartItemRow(
                 Column(
                     modifier = Modifier.weight(1f)
                 ) {
-                    Text(
-                        text = cartItem.menuItem.name,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.Black
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = cartItem.menuItem.name,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.Black
+                        )
+                        
+                        if (isOutOfStock) {
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "(Đã hết)",
+                                fontSize = 12.sp,
+                                color = Color.Red,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                    
                     Text(
                         text = "Mô tả",
                         fontSize = 14.sp,
@@ -493,7 +619,6 @@ fun PaymentCartItemRow(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-
                 
                 // Phần điều chỉnh số lượng
                 Row(
@@ -504,7 +629,8 @@ fun PaymentCartItemRow(
                         modifier = Modifier.size(36.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = Color.Gray),
                         contentPadding = PaddingValues(4.dp),
-                        shape = RoundedCornerShape(4.dp)
+                        shape = RoundedCornerShape(4.dp),
+                        enabled = !isOutOfStock
                     ) {
                         Icon(
                             imageVector = Icons.Default.Remove,
@@ -527,7 +653,8 @@ fun PaymentCartItemRow(
                         modifier = Modifier.size(36.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = Color.Black),
                         contentPadding = PaddingValues(4.dp),
-                        shape = RoundedCornerShape(4.dp)
+                        shape = RoundedCornerShape(4.dp),
+                        enabled = !isOutOfStock
                     ) {
                         Icon(
                             imageVector = Icons.Default.Add,
@@ -535,6 +662,16 @@ fun PaymentCartItemRow(
                             tint = Color.White,
                             modifier = Modifier.size(18.dp)
                         )
+                    }
+                }
+                
+                if (isOutOfStock) {
+                    Button(
+                        onClick = { cartViewModel.removeFromCart(cartItem) },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.Red),
+                        modifier = Modifier.height(36.dp)
+                    ) {
+                        Text("Xóa", fontSize = 14.sp)
                     }
                 }
             }

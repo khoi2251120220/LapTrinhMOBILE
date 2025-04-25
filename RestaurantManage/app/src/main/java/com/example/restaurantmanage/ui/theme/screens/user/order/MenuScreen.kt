@@ -105,6 +105,23 @@ fun MenuItemView(menuItem: MenuItem, navController: NavController) {
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop
                 )
+                
+                // Hiển thị overlay "Hết hàng" nếu item không còn
+                if (!menuItem.inStock) {
+                    Surface(
+                        modifier = Modifier.matchParentSize(),
+                        color = Color.Black.copy(alpha = 0.5f)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Text(
+                                text = "HẾT HÀNG",
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp
+                            )
+                        }
+                    }
+                }
             }
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -206,7 +223,7 @@ fun MenuScreen(
         }
 
         // This is the menuItems for the selected category
-        val menuItems = selectedCategory?.items ?: emptyList()
+        val menuItems = selectedCategory?.items?.filter { it.inStock } ?: emptyList()
 
         if (menuItems.isEmpty()) {
             Box(

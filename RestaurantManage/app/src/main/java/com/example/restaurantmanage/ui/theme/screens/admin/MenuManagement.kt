@@ -273,7 +273,7 @@ fun MenuItemCard(
             ) {
                 // Hiển thị ảnh từ đường dẫn
                 if (item.image.isNotEmpty() && !item.image.startsWith("/")) {
-                    // Sử dụng DrawableResourceUtils thay vì getIdentifier
+                    // Sử dụng DrawableResourceUtils
                     val resourceId = DrawableResourceUtils.getDrawableResourceId(item.image)
                     
                     if (resourceId != null) {
@@ -620,7 +620,7 @@ fun DrawablePickerDialog(
                         horizontalArrangement = Arrangement.SpaceEvenly
                     ) {
                         row.forEach { drawableName ->
-                            // Sử dụng DrawableResourceUtils thay vì getIdentifier
+                            // Sử dụng DrawableResourceUtils
                             val resourceId = DrawableResourceUtils.getDrawableResourceId(drawableName)
                             
                             if (resourceId != null) {
