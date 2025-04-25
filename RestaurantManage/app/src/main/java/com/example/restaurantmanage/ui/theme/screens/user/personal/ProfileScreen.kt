@@ -61,15 +61,16 @@ fun ProfileScreen(
     var email by remember { mutableStateOf(userProfile.email) }
     var phone by remember { mutableStateOf(userProfile.phone) }
     var isEditing by remember { mutableStateOf(false) }
-    
+    var nameError by remember { mutableStateOf<String?>(null) }
+    var phoneError by remember { mutableStateOf<String?>(null) }
+
     // Lấy ID của người dùng hiện tại
     val currentUserId = FirebaseAuth.getInstance().currentUser?.uid
-    
+
     // Load user orders
     LaunchedEffect(currentUserId) {
         currentUserId?.let { userId ->
             orderViewModel.loadUserOrders(userId)
-            // Không cần load bookings ở đây vì BookingViewModel đã tự động load trong init
         }
     }
 
@@ -78,6 +79,8 @@ fun ProfileScreen(
         name = userProfile.name
         email = userProfile.email
         phone = userProfile.phone
+        nameError = null
+        phoneError = null
     }
 
     // Reset trạng thái lưu sau 2 giây
@@ -85,6 +88,26 @@ fun ProfileScreen(
         LaunchedEffect(Unit) {
             kotlinx.coroutines.delay(2000)
             viewModel.resetSaveStatus()
+        }
+    }
+
+    // Hàm kiểm tra định dạng tên
+    fun validateName(name: String): String? {
+        return if (name.isBlank()) {
+            "Vui lòng nhập tên"
+        } else {
+            null
+        }
+    }
+
+    // Hàm kiểm tra định dạng số điện thoại
+    fun validatePhoneNumber(phone: String): String? {
+        return when {
+            phone.isEmpty() -> "Vui lòng nhập số điện thoại"
+            !phone.startsWith("0") -> "Số điện thoại phải bắt đầu bằng 0"
+            phone.length < 10 || phone.length > 11 -> "Số điện thoại phải có 10 hoặc 11 số"
+            !phone.all { it.isDigit() } -> "Số điện thoại chỉ được chứa số"
+            else -> null
         }
     }
 
@@ -112,12 +135,10 @@ fun ProfileScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.clickable {
                         if (!isLoading) {
-                            // Đăng xuất
                             viewModel.signOut(context) {
-                                // Khởi động lại MainActivity bằng Intent
                                 val intent = android.content.Intent(context, com.example.restaurantmanage.MainActivity::class.java)
-                                intent.flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK or 
-                                            android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK
+                                intent.flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK or
+                                        android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK
                                 context.startActivity(intent)
                             }
                         }
@@ -170,7 +191,6 @@ fun ProfileScreen(
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold
                         )
-                        
                         IconButton(
                             onClick = { isEditing = !isEditing }
                         ) {
@@ -181,9 +201,9 @@ fun ProfileScreen(
                             )
                         }
                     }
-                    
+
                     Spacer(modifier = Modifier.height(16.dp))
-                    
+
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Box(
                             modifier = Modifier
@@ -203,9 +223,21 @@ fun ProfileScreen(
                             if (isEditing) {
                                 OutlinedTextField(
                                     value = name,
-                                    onValueChange = { name = it },
+                                    onValueChange = { newName ->
+                                        name = newName
+                                        nameError = validateName(newName)
+                                    },
                                     label = { Text("Tên") },
                                     modifier = Modifier.fillMaxWidth(),
+                                    isError = nameError != null,
+                                    supportingText = {
+                                        nameError?.let {
+                                            Text(
+                                                text = it,
+                                                color = MaterialTheme.colorScheme.error
+                                            )
+                                        }
+                                    },
                                     enabled = !isLoading
                                 )
                             } else {
@@ -238,10 +270,24 @@ fun ProfileScreen(
                         if (isEditing) {
                             OutlinedTextField(
                                 value = phone,
-                                onValueChange = { phone = it },
+                                onValueChange = { newPhone ->
+                                    phone = newPhone
+                                    phoneError = validatePhoneNumber(newPhone)
+                                },
                                 label = { Text("Số điện thoại") },
                                 modifier = Modifier.fillMaxWidth(),
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                                keyboardOptions = KeyboardOptions(
+                                    keyboardType = KeyboardType.Phone
+                                ),
+                                isError = phoneError != null,
+                                supportingText = {
+                                    phoneError?.let {
+                                        Text(
+                                            text = it,
+                                            color = MaterialTheme.colorScheme.error
+                                        )
+                                    }
+                                },
                                 enabled = !isLoading
                             )
                         } else {
@@ -253,15 +299,19 @@ fun ProfileScreen(
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
-                    
+
                     if (isEditing) {
                         Button(
                             onClick = {
-                                viewModel.updateProfile(name = name, phone = phone)
-                                isEditing = false
+                                nameError = validateName(name)
+                                phoneError = validatePhoneNumber(phone)
+                                if (nameError == null && phoneError == null) {
+                                    viewModel.updateProfile(name = name, phone = phone)
+                                    isEditing = false
+                                }
                             },
                             modifier = Modifier.align(Alignment.End),
-                            enabled = !isLoading
+                            enabled = !isLoading && nameError == null && phoneError == null
                         ) {
                             if (isLoading) {
                                 CircularProgressIndicator(
@@ -289,9 +339,9 @@ fun ProfileScreen(
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold
                     )
-                    
+
                     Spacer(modifier = Modifier.height(8.dp))
-                    
+
                     if (orders.isEmpty()) {
                         Box(
                             modifier = Modifier
@@ -317,9 +367,9 @@ fun ProfileScreen(
                     }
                 }
             }
-            
+
             Spacer(modifier = Modifier.height(24.dp))
-            
+
             // Booking History Section
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -331,9 +381,9 @@ fun ProfileScreen(
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold
                     )
-                    
+
                     Spacer(modifier = Modifier.height(8.dp))
-                    
+
                     if (bookings.isEmpty()) {
                         Box(
                             modifier = Modifier
@@ -364,9 +414,9 @@ fun ProfileScreen(
                     }
                 }
             }
-            
+
             Spacer(modifier = Modifier.height(16.dp))
-            
+
             // Success message
             if (isSaved) {
                 Card(
@@ -415,7 +465,7 @@ fun OrderHistoryItem(order: OrderEntity) {
                     color = Color.Gray
                 )
             }
-            
+
             // Order status and total
             Column(horizontalAlignment = Alignment.End) {
                 Text(
@@ -469,7 +519,7 @@ fun BookingHistoryItem(
                     color = Color.Gray
                 )
             }
-            
+
             // Booking status
             Column(horizontalAlignment = Alignment.End) {
                 Text(
@@ -489,7 +539,7 @@ fun BookingHistoryItem(
                 )
             }
         }
-        
+
         if (booking.status == "CONFIRMED") {
             Spacer(modifier = Modifier.height(8.dp))
             Button(
@@ -509,8 +559,6 @@ fun BookingHistoryItem(
 @Preview(showBackground = true)
 @Composable
 fun ProfileScreenPreview() {
-    // Profile Screen Preview không khả dụng do phần phụ thuộc
-    // Vì ProfileViewModel cần UserDao nên không thể xem trước trực tiếp
     MaterialTheme {
         Box(
             modifier = Modifier
