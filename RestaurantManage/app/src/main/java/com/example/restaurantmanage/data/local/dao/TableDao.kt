@@ -32,4 +32,7 @@ interface TableDao {
 
     @Query("UPDATE tables SET status = :status WHERE id = :tableId")
     suspend fun updateTableStatus(tableId: Int, status: String)
+
+    @Query("SELECT * FROM tables WHERE status = :status")
+    suspend fun getTablesByStatusAsList(status: String): List<TableEntity>
 } 

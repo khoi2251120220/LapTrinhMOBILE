@@ -1,5 +1,6 @@
 package com.example.restaurantmanage.ui.theme.screens.user.personal
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -31,6 +32,7 @@ import com.example.restaurantmanage.viewmodels.OrderViewModelFactory
 import com.example.restaurantmanage.viewmodels.BookingViewModel
 import com.example.restaurantmanage.ui.theme.components.formatCurrency
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -307,6 +309,19 @@ fun ProfileScreen(
                                 phoneError = validatePhoneNumber(phone)
                                 if (nameError == null && phoneError == null) {
                                     viewModel.updateProfile(name = name, phone = phone)
+                                    // Cập nhật số điện thoại lên Firestore
+                                    FirebaseAuth.getInstance().currentUser?.uid?.let { userId ->
+                                        FirebaseFirestore.getInstance().collection("users").document(userId)
+                                            .update("phone", phone)
+                                            .addOnSuccessListener {
+                                                // Cập nhật thành công
+                                            }
+                                            .addOnFailureListener { e ->
+                                                // Xử lý lỗi
+                                                viewModel.setError("Không thể cập nhật số điện thoại lên Firestore: ${e.message}")
+                                                Log.e("ProfileScreen", "Không thể cập nhật số điện thoại: ${e.message}")
+                                            }
+                                    }
                                     isEditing = false
                                 }
                             },

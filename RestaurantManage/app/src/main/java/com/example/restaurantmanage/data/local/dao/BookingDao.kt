@@ -22,12 +22,15 @@ interface BookingDao {
     @Query("SELECT * FROM bookings WHERE status = :status")
     fun getBookingsByStatus(status: String): Flow<List<BookingEntity>>
 
-    @Query("SELECT EXISTS(SELECT 1 FROM bookings WHERE tableId = :tableId AND bookingTime BETWEEN :startTime AND :endTime AND status != 'CANCELLED')")
+    @Query("SELECT * FROM bookings WHERE tableId = :tableId AND status = 'CONFIRMED'")
+    fun getActiveBookingForTable(tableId: Int): BookingEntity?
+
+    @Query("SELECT * FROM bookings WHERE tableId = :tableId AND bookingTime BETWEEN :startTime AND :endTime")
+    suspend fun getBookingsForTableBetween(tableId: Int, startTime: Date, endTime: Date): List<BookingEntity>
+
+    @Query("SELECT EXISTS(SELECT 1 FROM bookings WHERE tableId = :tableId AND bookingTime BETWEEN :startTime AND :endTime AND (status = 'CONFIRMED' OR status = 'PENDING'))")
     suspend fun isTableBooked(tableId: Int, startTime: Date, endTime: Date): Boolean
     
-    @Query("SELECT * FROM bookings WHERE tableId = :tableId AND status = 'CONFIRMED' LIMIT 1")
-    suspend fun getActiveBookingForTable(tableId: Int): BookingEntity?
-
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertBooking(booking: BookingEntity)
 
@@ -39,4 +42,7 @@ interface BookingDao {
     
     @Query("UPDATE bookings SET status = :status WHERE id = :bookingId")
     suspend fun updateBookingStatus(bookingId: String, status: String)
+
+    @Query("SELECT * FROM bookings WHERE bookingTime BETWEEN :startTime AND :endTime")
+    suspend fun getBookingsBetweenDates(startTime: Date, endTime: Date): List<BookingEntity>
 }

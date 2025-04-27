@@ -75,6 +75,19 @@ class FirebaseHelper {
         }
     }
     
+    // Cập nhật số điện thoại người dùng
+    suspend fun updateUserPhone(userId: String, phone: String): Boolean {
+        return try {
+            usersCollection.document(userId)
+                .update("phone", phone)
+                .await()
+            true
+        } catch (e: Exception) {
+            Log.e(TAG, "Lỗi khi cập nhật số điện thoại người dùng", e)
+            false
+        }
+    }
+    
     // Xóa người dùng (cả Firestore và Authentication)
     suspend fun deleteUser(userId: String): Boolean {
         return try {

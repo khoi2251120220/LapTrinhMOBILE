@@ -573,6 +573,27 @@ fun UserCard(
                         tint = MaterialTheme.colorScheme.primary
                     )
                 }
+                
+                // Phone number
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(vertical = 4.dp)
+                ) {
+                    Text(
+                        text = "Số điện thoại: ",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = TextColor
+                    )
+                    Text(
+                        text = when {
+                            user.phone.isEmpty() -> "Chưa cập nhật"
+                            else -> user.phone
+                        },
+                        fontSize = 14.sp,
+                        color = TextColor
+                    )
+                }
             }
             
             Spacer(modifier = Modifier.height(12.dp))

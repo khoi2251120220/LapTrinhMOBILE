@@ -30,8 +30,8 @@ import com.example.restaurantmanage.viewmodels.OrderViewModelFactory
 @Composable
 fun PaymentSuccessScreen(
     navController: NavHostController,
-    orderId: String, // Mã đơn hàng
-    customerName: String, // Tên khách hàng
+    orderId: String,
+    customerName: String,
     amount: String, // Số tiền
     paymentTime: String, // Thời gian thanh toán
     orderViewModel: OrderViewModel = viewModel(
@@ -46,13 +46,25 @@ fun PaymentSuccessScreen(
         orderViewModel.loadOrderItems(orderId)
     }
     
+    // Tính lại tổng tiền từ các món đã đặt
+    val calculatedSubtotal = orderItems.sumOf { it.price * it.quantity }
+    // Tính tổng tiền bao gồm thuế (giả sử 8%)
+    val taxRate = 0.1
+    val calculatedTotal = calculatedSubtotal * (1 + taxRate)
+    val displayAmount = when {
+        // Nếu đã tính được tổng từ orderItems và danh sách không rỗng
+        calculatedTotal > 0 && orderItems.isNotEmpty() -> "${calculatedTotal.toInt()} VNĐ"
+        // Ngược lại sử dụng giá trị amount được truyền vào
+        else -> amount
+    }
+    
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.White)
             .padding(horizontal = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.Center
     ) {
         item {
             Spacer(modifier = Modifier.height(24.dp))
@@ -198,7 +210,7 @@ fun PaymentSuccessScreen(
                             color = Color.Gray
                         )
                         Text(
-                            text = amount, // Dữ liệu động
+                            text = displayAmount,
                             fontSize = 16.sp,
                             color = Color.Black,
                             fontWeight = FontWeight.Medium
@@ -206,7 +218,9 @@ fun PaymentSuccessScreen(
                     }
                     
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 12.dp),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text(

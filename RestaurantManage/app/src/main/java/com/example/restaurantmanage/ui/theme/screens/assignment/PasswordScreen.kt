@@ -107,11 +107,22 @@ fun PasswordScreen(navController: NavHostController, email: String) {
                                 firestore.collection("users").document(userId).get()
                                     .addOnSuccessListener { document ->
                                         val role = document.getString("role") ?: "user"
+                                        val status = document.getString("status") ?: "ACTIVE"
+                                        
+                                        // Kiểm tra trạng thái tài khoản
+                                        if (status == "INACTIVE") {
+                                            // Đăng xuất nếu tài khoản không hoạt động
+                                            auth.signOut()
+                                            errorMessage = "Tài khoản của bạn đã bị tạm khóa. Vui lòng liên hệ quản trị viên."
+                                            return@addOnSuccessListener
+                                        }
+                                        
                                         // Lưu thông tin nếu người dùng chưa có trong Firestore
                                         if (!document.exists()) {
                                             val userData = hashMapOf(
                                                 "email" to email,
-                                                "role" to "user"
+                                                "role" to "user",
+                                                "status" to "ACTIVE"
                                             )
                                             firestore.collection("users").document(userId).set(userData)
                                         }

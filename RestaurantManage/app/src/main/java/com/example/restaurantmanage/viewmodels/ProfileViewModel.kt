@@ -9,12 +9,15 @@ import com.example.restaurantmanage.data.local.RestaurantDatabase
 import com.example.restaurantmanage.data.local.dao.UserDao
 import com.example.restaurantmanage.data.local.entity.UserEntity
 import com.example.restaurantmanage.data.models.UserProfile
+import com.example.restaurantmanage.data.firebase.FirebaseHelper
 import com.google.android.gms.auth.api.identity.Identity
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.tasks.await
 
 class ProfileViewModel(
     private val userDao: UserDao
@@ -45,25 +48,40 @@ class ProfileViewModel(
             val email = user.email ?: ""
             val role = if (email == "admin@gmail.com") "admin" else "user"
             
-            // Tìm user trong cơ sở dữ liệu Room
             viewModelScope.launch {
                 try {
+                    // Kiểm tra và lấy thông tin từ Firestore trước
+                    val firebaseHelper = FirebaseHelper.getInstance()
+                    val firestore = FirebaseFirestore.getInstance()
+                    val userDocument = firestore.collection("users").document(userId).get().await()
+                    
+                    var phoneFromFirebase = ""
+                    if (userDocument.exists()) {
+                        phoneFromFirebase = userDocument.getString("phone") ?: ""
+                    }
+                    
+                    // Tìm user trong cơ sở dữ liệu Room
                     val userEntity = userDao.getUserById(userId).first()
                     if (userEntity != null) {
-                        // Nếu đã có trong DB, dùng dữ liệu từ DB
+                        // Nếu đã có trong DB, dùng dữ liệu từ DB và cập nhật phone từ Firebase nếu có
                         _userProfile.value = UserProfile(
                             name = userEntity.name,
                             email = userEntity.email,
-                            phone = userEntity.phone,
+                            phone = if (phoneFromFirebase.isNotEmpty()) phoneFromFirebase else userEntity.phone,
                             favoriteItems = emptyList(),
                             role = userEntity.role
                         )
+                        
+                        // Cập nhật lại room DB nếu phone từ Firebase khác
+                        if (phoneFromFirebase.isNotEmpty() && phoneFromFirebase != userEntity.phone) {
+                            userDao.updateUser(userEntity.copy(phone = phoneFromFirebase))
+                        }
                     } else {
                         // Nếu chưa có, tạo mới với thông tin từ Firebase
                         _userProfile.value = UserProfile(
                             name = user.displayName ?: "",
                             email = email,
-                            phone = "",
+                            phone = phoneFromFirebase,
                             favoriteItems = emptyList(),
                             role = role
                         )
@@ -74,7 +92,7 @@ class ProfileViewModel(
                                 userId = userId,
                                 name = user.displayName ?: "",
                                 email = email,
-                                phone = "",
+                                phone = phoneFromFirebase,
                                 role = role
                             )
                         )
@@ -119,8 +137,16 @@ class ProfileViewModel(
                     )
                     userDao.updateUser(userEntity)
                     
+                    // Cập nhật số điện thoại lên Firestore
+                    val firebaseHelper = FirebaseHelper.getInstance()
+                    val result = firebaseHelper.updateUserPhone(userId, phone)
+                    
+                    if (!result) {
+                        Log.w("ProfileViewModel", "Không thể cập nhật số điện thoại lên Firestore")
+                    }
+                    
                     _isSaved.value = true
-                    Log.d("ProfileViewModel", "Đã lưu thông tin người dùng vào Room DB: $userEntity")
+                    Log.d("ProfileViewModel", "Đã lưu thông tin người dùng vào Room DB và Firestore: $userEntity")
                 } catch (e: Exception) {
                     _errorMessage.value = "Lỗi khi cập nhật thông tin: ${e.message}"
                     Log.e("ProfileViewModel", "Error updating user profile", e)
@@ -159,6 +185,10 @@ class ProfileViewModel(
 
     fun clearError() {
         _errorMessage.value = ""
+    }
+
+    fun setError(message: String) {
+        _errorMessage.value = message
     }
     
     class Factory(private val database: RestaurantDatabase) : ViewModelProvider.Factory {

@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.restaurantmanage.ui.theme.screens.admin.tablemanagement.TableManagementScreen
 
 @Composable
 fun MainScreenAdmin() {
