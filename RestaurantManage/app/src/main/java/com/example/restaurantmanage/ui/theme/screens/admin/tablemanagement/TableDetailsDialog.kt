@@ -28,7 +28,7 @@ fun TableDetailsDialog(
     booking: BookingEntity?,
     onDismiss: () -> Unit,
     onStatusChange: (Int, String) -> Unit,
-    onDeleteTable: (TableEntity) -> Unit,
+    onDeleteTable: (Int) -> Unit,
     onViewBookingDetails: () -> Unit,
     onCancelBooking: (BookingEntity) -> Unit
 ) {
@@ -217,7 +217,7 @@ fun TableDetailsDialog(
         },
         dismissButton = {
             TextButton(
-                onClick = { onDeleteTable(table) },
+                onClick = { onDeleteTable(table.id) },
                 colors = ButtonDefaults.textButtonColors(contentColor = DangerColor)
             ) {
                 Text("Xóa bàn")

@@ -53,8 +53,8 @@ fun RatingComponent(
 @Composable
 fun RatingComponentPreview() {
     RatingComponent(
-        onRatingChanged = { rating ->
-            // Xử lý khi rating thay đổi (có thể để trống trong preview)
+        onRatingChanged = {
+
         }
     )
 }

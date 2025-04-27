@@ -25,7 +25,6 @@ import com.example.restaurantmanage.ui.theme.components.AdminAppBar
 import com.example.restaurantmanage.ui.theme.components.NavAdmin
 import com.example.restaurantmanage.viewmodels.TableManagementViewModel
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TableManagementScreen(
     navController: NavController,
@@ -153,9 +152,8 @@ fun TableManagementScreen(
     if (showAddTableDialog) {
         AddTableDialog(
             onDismiss = { showAddTableDialog = false },
-            onAddTable = { name, capacity ->
-                viewModel.addTable(name, capacity)
-                showAddTableDialog = false
+            onAddTable = { name, capacity, image ->
+                viewModel.addTable(name, capacity, image)
             }
         )
     }
@@ -169,8 +167,8 @@ fun TableManagementScreen(
                 viewModel.updateTableStatus(tableId, status)
                 showTableDetailsDialog = false
             },
-            onDeleteTable = { table ->
-                viewModel.deleteTable(table)
+            onDeleteTable = { tableId ->
+                viewModel.deleteTable(tableId)
                 showTableDetailsDialog = false
             },
             onViewBookingDetails = {

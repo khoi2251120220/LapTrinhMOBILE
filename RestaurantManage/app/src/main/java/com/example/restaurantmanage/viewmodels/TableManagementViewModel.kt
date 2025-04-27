@@ -7,6 +7,7 @@ import com.example.restaurantmanage.data.local.dao.TableDao
 import com.example.restaurantmanage.data.local.dao.BookingDao
 import com.example.restaurantmanage.data.local.entity.TableEntity
 import com.example.restaurantmanage.data.local.entity.BookingEntity
+import com.example.restaurantmanage.data.firebase.FirestoreTable
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
@@ -59,6 +60,59 @@ class TableManagementViewModel(
         // Sync data from Firestore
         viewModelScope.launch {
             syncBookingsFromFirestore()
+            syncTablesFromFirestore()
+        }
+    }
+
+    // Sync tables from Firestore to local database
+    private suspend fun syncTablesFromFirestore() {
+        withContext(Dispatchers.IO) {
+            try {
+                _isLoading.value = true
+                
+                // Get all tables from Firestore
+                val firestoreTables = firestore.collection("tables")
+                    .get()
+                    .await()
+                
+                // If there are no tables in Firestore, upload existing tables from Room
+                if (firestoreTables.isEmpty) {
+                    val localTables = tableDao.getAllTablesAsList()
+                    if (localTables.isNotEmpty()) {
+                        for (table in localTables) {
+                            addTableToFirestore(table)
+                        }
+                    }
+                } else {
+                    // Clear local tables first to avoid duplicates
+                    tableDao.deleteAllTables()
+                    
+                    // Process each table from Firestore
+                    for (document in firestoreTables.documents) {
+                        val tableId = document.getString("id") ?: continue
+                        val tableName = document.getString("name") ?: "Unknown Table"
+                        val capacity = document.getLong("capacity")?.toInt() ?: 2
+                        val status = document.getString("status") ?: "AVAILABLE"
+                        val image = document.getString("image") ?: ""
+                        
+                        // Insert into local database
+                        val localId = if (tableId.toIntOrNull() != null) tableId.toInt() else 0
+                        val tableEntity = TableEntity(
+                            id = localId,
+                            name = tableName,
+                            capacity = capacity,
+                            status = status,
+                            image = image
+                        )
+                        tableDao.insertTable(tableEntity)
+                    }
+                }
+                
+                _isLoading.value = false
+            } catch (e: Exception) {
+                _isLoading.value = false
+                e.printStackTrace()
+            }
         }
     }
 
@@ -77,8 +131,128 @@ class TableManagementViewModel(
         viewModelScope.launch {
             _isLoading.value = true
             syncBookingsFromFirestore()
+            syncTablesFromFirestore()
             _isLoading.value = false
         }
+    }
+
+    // Add new table to both Room and Firestore
+    fun addTable(name: String, capacity: Int, image: String = "") {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                // Add to Room database first to get generated ID
+                val tableEntity = TableEntity(
+                    name = name,
+                    capacity = capacity,
+                    status = "AVAILABLE",
+                    image = image
+                )
+                val id = tableDao.insertTable(tableEntity).toInt()
+                
+                // Get the inserted table with the generated ID
+                val insertedTable = tableDao.getTableById(id)
+                
+                // Add to Firestore
+                insertedTable?.let {
+                    addTableToFirestore(it)
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+    
+    // Add table to Firestore
+    private suspend fun addTableToFirestore(table: TableEntity) {
+        try {
+            val firestoreTable = FirestoreTable.fromTableEntity(table)
+            
+            firestore.collection("tables")
+                .document(table.id.toString())
+                .set(firestoreTable)
+                .await()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+    
+    // Update table in both Room and Firestore
+    fun updateTable(tableId: Int, name: String, capacity: Int, status: String, image: String = "") {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                // Update in Room
+                val updatedTable = TableEntity(
+                    id = tableId,
+                    name = name,
+                    capacity = capacity,
+                    status = status,
+                    image = image
+                )
+                tableDao.updateTable(updatedTable)
+                
+                // Update in Firestore
+                updateTableInFirestore(updatedTable)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+    
+    // Update table status in both Room and Firestore
+    fun updateTableStatus(tableId: Int, status: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                // Update in Room
+                tableDao.updateTableStatus(tableId, status)
+                
+                // Get updated table
+                val updatedTable = tableDao.getTableById(tableId)
+                
+                // Update in Firestore
+                updatedTable?.let {
+                    updateTableInFirestore(it)
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+    
+    // Update table in Firestore
+    private suspend fun updateTableInFirestore(table: TableEntity) {
+        try {
+            val firestoreTable = FirestoreTable.fromTableEntity(table)
+            
+            firestore.collection("tables")
+                .document(table.id.toString())
+                .set(firestoreTable)
+                .await()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+    
+    // Delete table from both Room and Firestore
+    fun deleteTable(tableId: Int) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                // Delete from Room
+                tableDao.deleteTable(tableId)
+                
+                // Delete from Firestore
+                firestore.collection("tables")
+                    .document(tableId.toString())
+                    .delete()
+                    .await()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+    
+    // Delete table from both Room and Firestore (overloaded method for TableEntity)
+    fun deleteTable(table: TableEntity) {
+        deleteTable(table.id)
     }
     
     // Sync bookings from Firestore to local database
@@ -320,33 +494,6 @@ class TableManagementViewModel(
         }
     }
 
-    fun addTable(name: String, capacity: Int) {
-        viewModelScope.launch(Dispatchers.IO) {
-            val table = TableEntity(
-                name = name,
-                capacity = capacity
-            )
-            tableDao.insertTable(table)
-        }
-    }
-    
-    fun addTableWithImage(name: String, capacity: Int, imagePath: String) {
-        viewModelScope.launch(Dispatchers.IO) {
-            val table = TableEntity(
-                name = name,
-                capacity = capacity,
-                image = imagePath
-            )
-            tableDao.insertTable(table)
-        }
-    }
-
-    fun updateTableStatus(tableId: Int, status: String) {
-        viewModelScope.launch(Dispatchers.IO) {
-            tableDao.updateTableStatus(tableId, status)
-        }
-    }
-    
     fun incrementTableOrderCount(tableId: Int) {
         viewModelScope.launch {
             // Get the current count
@@ -372,12 +519,6 @@ class TableManagementViewModel(
             } catch (e: Exception) {
                 e.printStackTrace()
             }
-        }
-    }
-
-    fun deleteTable(table: TableEntity) {
-        viewModelScope.launch(Dispatchers.IO) {
-            tableDao.deleteTable(table)
         }
     }
 
@@ -565,16 +706,14 @@ class TableManagementViewModel(
         val bookingsTomorrow: Int = 0
     )
 
+    // Add this factory method to maintain API compatibility
     class Factory(
         private val tableDao: TableDao,
         private val bookingDao: BookingDao
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            if (modelClass.isAssignableFrom(TableManagementViewModel::class.java)) {
-                return TableManagementViewModel(tableDao, bookingDao) as T
-            }
-            throw IllegalArgumentException("Unknown ViewModel class")
+            return TableManagementViewModel(tableDao, bookingDao) as T
         }
     }
 }

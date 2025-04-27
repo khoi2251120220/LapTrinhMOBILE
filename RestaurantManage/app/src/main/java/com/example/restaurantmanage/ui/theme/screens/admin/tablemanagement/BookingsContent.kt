@@ -29,74 +29,39 @@ fun BookingsContent(
     onBookingClick: (BookingEntity) -> Unit
 ) {
     var selectedDate by remember { mutableStateOf(Date()) }
+    val bookingsForDate by viewModel.bookingsForDate.collectAsState()
     val datePickerState = rememberDatePickerState(
         initialSelectedDateMillis = selectedDate.time
     )
     var showDatePicker by remember { mutableStateOf(false) }
-    val bookings by viewModel.bookingsForDate.collectAsState()
+
+    LaunchedEffect(selectedDate) {
+        viewModel.loadBookingsForDate(selectedDate)
+    }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(horizontal = 16.dp)
     ) {
-        // Date picker
-        Row(
+        // Date selector
+        Button(
+            onClick = { showDatePicker = true },
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .padding(vertical = 8.dp)
         ) {
             Text(
-                text = "Chọn ngày: ",
-                fontWeight = FontWeight.Medium
+                text = "Chọn ngày: ${SimpleDateFormat("dd/MM/yyyy", Locale("vi")).format(selectedDate)}",
+                modifier = Modifier.padding(vertical = 8.dp)
             )
-
-            Row(
-                modifier = Modifier
-                    .weight(1f)
-                    .clickable { showDatePicker = true }
-                    .padding(horizontal = 8.dp, vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = SimpleDateFormat("dd/MM/yyyy", Locale("vi")).format(selectedDate),
-                    color = PrimaryColor,
-                    fontWeight = FontWeight.Medium
-                )
-
-                Spacer(modifier = Modifier.width(8.dp))
-
-                Icon(
-                    imageVector = Icons.Default.DateRange,
-                    contentDescription = "Chọn ngày",
-                    tint = PrimaryColor
-                )
-            }
-
-            Button(
-                onClick = { viewModel.loadBookingsForDate(selectedDate) },
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = PrimaryColor
-                ),
-                modifier = Modifier.padding(start = 8.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Refresh,
-                    contentDescription = "Làm mới"
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                Text("Làm mới")
-            }
         }
 
-        // Booking list
+        // Bookings list
         LazyColumn(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f)
+            modifier = Modifier.weight(1f)
         ) {
-            if (bookings.isEmpty()) {
+            if (bookingsForDate.isEmpty()) {
                 item {
                     Column(
                         modifier = Modifier
@@ -114,7 +79,7 @@ fun BookingsContent(
                     }
                 }
             } else {
-                items(bookings) { booking ->
+                items(bookingsForDate) { booking ->
                     BookingListItem(
                         booking = booking,
                         onClick = { onBookingClick(booking) }
@@ -138,7 +103,6 @@ fun BookingsContent(
                                 timeInMillis = millis
                             }
                             selectedDate = calendar.time
-                            viewModel.loadBookingsForDate(selectedDate)
                         }
                         showDatePicker = false
                     }

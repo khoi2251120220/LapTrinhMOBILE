@@ -38,7 +38,7 @@ fun OccupiedTablesContent(
                     verticalArrangement = Arrangement.Center
                 ) {
                     Text(
-                        text = "Không có bàn nào đang phục vụ",
+                        text = "Không có bàn nào đang được sử dụng",
                         fontSize = 16.sp,
                         color = Color.Gray,
                         textAlign = TextAlign.Center

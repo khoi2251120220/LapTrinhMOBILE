@@ -39,6 +39,30 @@ import com.example.restaurantmanage.viewmodels.BookingViewModel
 import java.text.SimpleDateFormat
 import java.util.*
 
+// Temporary pull refresh implementation until dependencies are resolved
+object PullRefreshTemp {
+    @Composable
+    fun rememberPullRefreshState(
+        refreshing: Boolean,
+        onRefresh: () -> Unit,
+    ): Any = Any()
+
+    @Composable
+    fun PullRefreshIndicator(
+        refreshing: Boolean,
+        state: Any,
+        modifier: Modifier = Modifier
+    ) {
+        if (refreshing) {
+            CircularProgressIndicator(
+                modifier = modifier
+            )
+        }
+    }
+}
+
+fun Modifier.pullRefresh(state: Any): Modifier = this
+
 @Composable
 fun BookingDialog(
     table: TableEntity,
@@ -302,6 +326,7 @@ fun BookingScreen(
     var showSuccessMessage by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
     val filteredTables by viewModel.filteredTables.collectAsState(initial = emptyList())
+    val isLoading by viewModel.isLoading.collectAsState()
     
     // Date selection
     var selectedDate by remember { mutableStateOf(Date()) }
@@ -316,6 +341,8 @@ fun BookingScreen(
     // Initialize filtered tables with all available tables
     LaunchedEffect(Unit) {
         viewModel.setFilteredTables(tables)
+        // Refresh data from Firestore when screen loads
+        viewModel.refreshData()
     }
     
     // Update filtered tables when search query changes
@@ -338,107 +365,134 @@ fun BookingScreen(
             )
         }
     ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(horizontal = 16.dp)
+        Box(
+            modifier = Modifier.fillMaxSize()
         ) {
-
-            
-            // Search bar
-            OutlinedTextField(
-                value = searchQuery,
-                onValueChange = { searchQuery = it },
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                placeholder = { Text("Tìm kiếm bàn...") },
-                leadingIcon = { 
-                    Icon(
-                        imageVector = Icons.Default.Search,
-                        contentDescription = "Search"
-                    )
-                },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                keyboardActions = KeyboardActions(
-                    onSearch = {
-                        keyboardController?.hide()
-                    }
-                )
-            )
-
-            // Date selector
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically
+                    .fillMaxSize()
+                    .padding(padding)
+                    .padding(horizontal = 16.dp)
             ) {
-                Text(
-                    text = "Ngày đặt bàn: ",
-                    fontWeight = FontWeight.Medium
+                // Search bar
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    placeholder = { Text("Tìm kiếm bàn...") },
+                    leadingIcon = { 
+                        Icon(
+                            imageVector = Icons.Default.Search,
+                            contentDescription = "Search"
+                        )
+                    },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                    keyboardActions = KeyboardActions(
+                        onSearch = {
+                            keyboardController?.hide()
+                        }
+                    )
                 )
 
+                // Date selector
                 Row(
                     modifier = Modifier
-                        .weight(1f)
-                        .clickable { showDatePicker = true }
-                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = SimpleDateFormat("dd/MM/yyyy", Locale("vi")).format(selectedDate),
-                        color = PrimaryColor,
+                        text = "Ngày đặt bàn: ",
                         fontWeight = FontWeight.Medium
                     )
 
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Row(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clickable { showDatePicker = true }
+                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = SimpleDateFormat("dd/MM/yyyy", Locale("vi")).format(selectedDate),
+                            color = PrimaryColor,
+                            fontWeight = FontWeight.Medium
+                        )
 
-                    Icon(
-                        imageVector = Icons.Default.DateRange,
-                        contentDescription = "Chọn ngày",
-                        tint = PrimaryColor
+                        Spacer(modifier = Modifier.width(8.dp))
+
+                        Icon(
+                            imageVector = Icons.Default.DateRange,
+                            contentDescription = "Chọn ngày",
+                            tint = PrimaryColor
+                        )
+                    }
+                }
+
+                // Use our temporary pull refresh implementation
+                val pullRefreshState = PullRefreshTemp.rememberPullRefreshState(
+                    refreshing = isLoading,
+                    onRefresh = { viewModel.refreshData() }
+                )
+
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                ) {
+                    // Table list
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                    ) {
+                        if (filteredTables.isEmpty()) {
+                            item {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 24.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Text(
+                                        text = "Không tìm thấy bàn nào",
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        color = Color.Gray,
+                                        textAlign = TextAlign.Center
+                                    )
+                                }
+                            }
+                        } else {
+                            items(filteredTables) { table ->
+                                TableCard(
+                                    table = table,
+                                    onClick = {
+                                        selectedTable = table
+                                        // Load time slots for this table on the selected date
+                                        viewModel.loadTableBookingSlots(table.id, selectedDate)
+                                        showBookingDialog = true
+                                    }
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                            }
+                        }
+                    }
+
+                    // Our temporary implementation
+                    PullRefreshTemp.PullRefreshIndicator(
+                        refreshing = isLoading,
+                        state = pullRefreshState,
+                        modifier = Modifier.align(Alignment.TopCenter)
                     )
                 }
             }
-            // Table list
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
-            ) {
-                if (filteredTables.isEmpty()) {
-                    item {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 24.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Text(
-                                text = "Không tìm thấy bàn nào",
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = Color.Gray,
-                                textAlign = TextAlign.Center
-                            )
-                        }
-                    }
-                } else {
-                    items(filteredTables) { table ->
-                        TableCard(
-                            table = table,
-                            onClick = {
-                                selectedTable = table
-                                // Load time slots for this table on the selected date
-                                viewModel.loadTableBookingSlots(table.id, selectedDate)
-                                showBookingDialog = true
-                            }
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                    }
-                }
+
+            // Loading indicator
+            if (isLoading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.align(Alignment.Center)
+                )
             }
         }
     }
